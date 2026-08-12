@@ -1,18 +1,19 @@
 import ConversationMember from "../../models/ConversationMember.js";
 import EVENTS from "../events.js";
 import mongoose from "mongoose";
+import { validateSocketPayload } from "../middleware/validate.socket.js";
+import { validateSocketRateLimit } from "../middleware/rateLimit.socket.js";
+import AppError from "../../errors/AppError.js";
+import { ERROR_CODES } from "../../errors/errorCodes.js";
+import { handleSocketError } from "../middleware/error.socket.js";
 
 /**
  * Validates if the user is an active member of the requested conversation.
  */
 export const verifyConversationAccess = async (conversationId, userId) => {
     try {
-        const membership = await ConversationMember.findOne({
-            conversationId: mongoose.Types.ObjectId.createFromHexString(conversationId),
-            userId: mongoose.Types.ObjectId.createFromHexString(userId),
-            status: "active"
-        });
-        return !!membership;
+        const { authorizationService } = await import("../../services/authorization.service.js");
+        return await authorizationService.checkConversationMembership(userId, conversationId);
     } catch (error) {
         return false;
     }
@@ -25,28 +26,32 @@ export const registerRoomHandlers = (io, socket) => {
     const userId = socket.user._id.toString();
 
     // Client requests to join a conversation room
-    socket.on(EVENTS.JOIN_CONVERSATION, async ({ conversationId }) => {
-        if (!conversationId) return;
+    socket.on(EVENTS.JOIN_CONVERSATION, async (payload) => {
+        if (!validateSocketRateLimit(socket, "CONVERSATION_JOIN")) return;
+        
+        if (!validateSocketPayload(socket, payload, {
+            conversationId: { required: true, type: "objectId" }
+        })) return;
 
+        const { conversationId } = payload;
         const isAuthorized = await verifyConversationAccess(conversationId, userId);
 
         if (isAuthorized) {
             const roomName = `conversation_${conversationId}`;
             socket.join(roomName);
-            // Optionally notify others in the room
-            // io.to(roomName).emit('user_joined_room', { userId });
         } else {
             // Emitting an error back to the specific socket
-            socket.emit(EVENTS.ERROR, {
-                message: "Unauthorized to join conversation",
-                code: "FORBIDDEN"
-            });
+            handleSocketError(socket, new AppError("Unauthorized to join conversation", 403, ERROR_CODES.FORBIDDEN));
         }
     });
 
     // Client requests to leave a conversation room
-    socket.on(EVENTS.LEAVE_CONVERSATION, ({ conversationId }) => {
-        if (!conversationId) return;
+    socket.on(EVENTS.LEAVE_CONVERSATION, (payload) => {
+        if (!validateSocketPayload(socket, payload, {
+            conversationId: { required: true, type: "objectId" }
+        })) return;
+
+        const { conversationId } = payload;
         const roomName = `conversation_${conversationId}`;
         socket.leave(roomName);
     });

@@ -6,6 +6,10 @@ import {
     deleteMessage
 } from "../controllers/message.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
+import { validate } from "../middleware/validate.js";
+import { messageRateLimiter, generalRateLimiter } from "../middleware/rateLimit.middleware.js";
+import { validateParamId, validatePagination } from "../validators/common.validator.js";
+import { createMessageValidator } from "../validators/message.validator.js";
 
 const router = express.Router();
 
@@ -13,10 +17,10 @@ const router = express.Router();
 router.use(protect);
 
 router.route("/")
-    .post(sendMessage);
+    .post(messageRateLimiter, validate(createMessageValidator), sendMessage);
 
-router.route("/:conversationId")
-    .get(getMessages);
+router.route("/conversation/:conversationId")
+    .get(validate([validateParamId("conversationId"), ...validatePagination]), getMessages);
 
 router.route("/:messageId")
     .patch(editMessage)

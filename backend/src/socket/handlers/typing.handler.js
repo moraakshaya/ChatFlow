@@ -1,12 +1,18 @@
 import EVENTS from "../events.js";
 import { verifyConversationAccess } from "./room.handler.js";
+import { validateSocketPayload } from "../middleware/validate.socket.js";
+import { validateSocketRateLimit } from "../middleware/rateLimit.socket.js";
+import AppError from "../../errors/AppError.js";
+import { ERROR_CODES } from "../../errors/errorCodes.js";
+import { handleSocketError } from "../middleware/error.socket.js";
+import logger from "../../utils/logger.js";
 
 // In-memory state: Map<conversationId, Map<userId, NodeJS.Timeout>>
 const typingTimers = new Map();
 
 // Helper to broadcast stop typing and cleanup memory
 const stopTyping = (io, conversationId, userId) => {
-    console.log(`[Typing Handler] Broadcasting typing_stop for user ${userId} in ${conversationId}`);
+    logger.debug({ conversationId, userId }, `[Typing Handler] Broadcasting typing_stop`);
     // 1. Broadcast the stop event to everyone else in the room
     const roomName = `conversation_${conversationId}`;
     io.to(roomName).emit(EVENTS.TYPING_STOP, {
@@ -31,15 +37,18 @@ export const registerTypingHandlers = (io, socket) => {
     const userId = socket.user._id.toString();
 
     socket.on(EVENTS.TYPING_START, async (payload, callback) => {
+        if (!validateSocketRateLimit(socket, "TYPING")) return;
+
+        if (!validateSocketPayload(socket, payload, {
+            conversationId: { required: true, type: "objectId" }
+        })) return;
+
         const { conversationId } = payload;
-        if (!conversationId) return;
 
         // Security check
         const isAuthorized = await verifyConversationAccess(conversationId, userId);
         if (!isAuthorized) {
-            if (typeof callback === "function") {
-                callback({ success: false, message: "Unauthorized" });
-            }
+            handleSocketError(socket, new AppError("Unauthorized", 403, ERROR_CODES.FORBIDDEN), callback);
             return;
         }
 
@@ -74,14 +83,17 @@ export const registerTypingHandlers = (io, socket) => {
     });
 
     socket.on(EVENTS.TYPING_STOP, async (payload, callback) => {
+        if (!validateSocketRateLimit(socket, "TYPING")) return;
+
+        if (!validateSocketPayload(socket, payload, {
+            conversationId: { required: true, type: "objectId" }
+        })) return;
+
         const { conversationId } = payload;
-        if (!conversationId) return;
 
         const isAuthorized = await verifyConversationAccess(conversationId, userId);
         if (!isAuthorized) {
-            if (typeof callback === "function") {
-                callback({ success: false, message: "Unauthorized" });
-            }
+            handleSocketError(socket, new AppError("Unauthorized", 403, ERROR_CODES.FORBIDDEN), callback);
             return;
         }
 

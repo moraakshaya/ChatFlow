@@ -4,6 +4,10 @@ import { handleConnect, handleDisconnect, registerPresenceHandlers } from "./han
 import { registerRoomHandlers } from "./handlers/room.handler.js";
 import { registerTypingHandlers, handleTypingDisconnect } from "./handlers/typing.handler.js";
 import { registerReadReceiptHandlers } from "./handlers/readReceipt.handler.js";
+import { registerMessageReactionHandlers } from "./handlers/messageReaction.handler.js";
+import { createAdapter } from "@socket.io/redis-adapter";
+import { redisClient, subClient } from "../config/redis.config.js";
+import logger from "../utils/logger.js";
 
 let io;
 
@@ -16,7 +20,8 @@ export const initializeSocket = (httpServer) => {
         cors: {
             origin: process.env.CLIENT_URL || "*", // Adjust CORS for production
             methods: ["GET", "POST"]
-        }
+        },
+        adapter: createAdapter(redisClient, subClient)
     });
 
     // 1. Authentication Middleware
@@ -25,7 +30,7 @@ export const initializeSocket = (httpServer) => {
     // 2. Connection Handler
     io.on("connection", (socket) => {
         const userId = socket.user._id.toString();
-        console.log(`Socket connected: ${socket.id} (User: ${userId})`);
+        logger.info({ event: "socket.connected", socketId: socket.id, userId });
 
         // Automatically join the user to their private room for direct notifications
         socket.join(`user_${userId}`);
@@ -36,10 +41,11 @@ export const initializeSocket = (httpServer) => {
         registerRoomHandlers(io, socket);
         registerTypingHandlers(io, socket);
         registerReadReceiptHandlers(io, socket);
+        registerMessageReactionHandlers(io, socket);
 
         // Disconnection Handler
-        socket.on("disconnect", () => {
-            console.log(`Socket disconnected: ${socket.id} (User: ${userId})`);
+        socket.on("disconnect", (reason) => {
+            logger.info({ event: "socket.disconnected", socketId: socket.id, userId, reason });
             handleDisconnect(io, socket);
             handleTypingDisconnect(io, socket);
         });

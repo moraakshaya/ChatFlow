@@ -21,13 +21,10 @@ export const addMember = asyncHandler(async (req, res) => {
     }
 
     // Check requester permission (must be owner or admin)
-    const requesterMembership = await ConversationMember.findOne({
-        conversationId,
-        userId: req.user._id,
-        status: "active"
-    });
+    const { authorizationService } = await import("../services/authorization.service.js");
+    const canManage = await authorizationService.checkMemberManagement(req.user._id, conversationId);
 
-    if (!requesterMembership || (requesterMembership.role !== "owner" && requesterMembership.role !== "admin")) {
+    if (!canManage) {
         return res.status(403).json({ success: false, message: "You do not have permission to manage members" });
     }
 
@@ -81,12 +78,10 @@ export const getConversationMembers = asyncHandler(async (req, res) => {
     const { conversationId } = req.params;
     
     // Check if requester has access
-    const requesterMembership = await ConversationMember.findOne({
-        conversationId,
-        userId: req.user._id,
-        status: "active"
-    });
-    if (!requesterMembership) {
+    const { authorizationService } = await import("../services/authorization.service.js");
+    const hasAccess = await authorizationService.checkConversationMembership(req.user._id, conversationId);
+
+    if (!hasAccess) {
         return res.status(403).json({ success: false, message: "You are not a member of this conversation" });
     }
 
@@ -202,14 +197,10 @@ export const updateRole = asyncHandler(async (req, res) => {
     }
 
     // Check requester is owner
-    const requesterMembership = await ConversationMember.findOne({
-        conversationId: membership.conversationId,
-        userId: req.user._id,
-        status: "active",
-        role: "owner"
-    });
+    const { authorizationService } = await import("../services/authorization.service.js");
+    const isOwner = await authorizationService.checkConversationOwnership(req.user._id, membership.conversationId);
 
-    if (!requesterMembership) {
+    if (!isOwner) {
         return res.status(403).json({ success: false, message: "Only owners can change roles" });
     }
 
@@ -241,13 +232,10 @@ export const removeMember = asyncHandler(async (req, res) => {
     }
 
     // Check requester permission
-    const requesterMembership = await ConversationMember.findOne({
-        conversationId: membership.conversationId,
-        userId: req.user._id,
-        status: "active"
-    });
+    const { authorizationService } = await import("../services/authorization.service.js");
+    const canManage = await authorizationService.checkMemberManagement(req.user._id, membership.conversationId);
 
-    if (!requesterMembership || (requesterMembership.role !== "owner" && requesterMembership.role !== "admin")) {
+    if (!canManage) {
         return res.status(403).json({ success: false, message: "You do not have permission to manage members" });
     }
 
@@ -335,17 +323,20 @@ export const transferOwnership = asyncHandler(async (req, res) => {
     session.startTransaction();
 
     try {
+        const { authorizationService } = await import("../services/authorization.service.js");
+        const isOwner = await authorizationService.checkConversationOwnership(req.user._id, conversationId);
+
+        if (!isOwner) {
+            await session.abortTransaction();
+            return res.status(403).json({ success: false, message: "Only the active owner can transfer ownership" });
+        }
+
         const currentOwner = await ConversationMember.findOne({
             conversationId,
             userId: req.user._id,
             status: "active",
             role: "owner"
         }).session(session);
-
-        if (!currentOwner) {
-            await session.abortTransaction();
-            return res.status(403).json({ success: false, message: "Only the active owner can transfer ownership" });
-        }
 
         const newOwner = await ConversationMember.findOne({
             conversationId,

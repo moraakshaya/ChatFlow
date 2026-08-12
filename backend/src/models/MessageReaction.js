@@ -35,7 +35,7 @@ const messageReactionSchema = new mongoose.Schema(
         reaction: {
             type: String,
             required: true,
-            enum: ["👍", "❤️", "😂", "😮", "😢", "🎉"],
+            enum: ["❤️", "👍", "😂", "🔥", "🎉", "😢", "😡", "👏"],
         },
     },
     {
@@ -43,9 +43,9 @@ const messageReactionSchema = new mongoose.Schema(
     }
 );
 
-// Enforce one user + one message = one reaction
+// Enforce one user + one message + one reaction = one record
 messageReactionSchema.index(
-    { messageId: 1, userId: 1 },
+    { messageId: 1, userId: 1, reaction: 1 },
     { unique: true }
 );
 

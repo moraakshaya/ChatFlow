@@ -1,18 +1,15 @@
 import ReadReceipt from "../models/ReadReceipt.js";
 import Message from "../models/Message.js";
 import ConversationMember from "../models/ConversationMember.js";
+import logger from "../utils/logger.js";
 
 class ReadReceiptService {
     /**
      * Helper to verify if user is an active member of the conversation.
      */
     async verifyActiveMembership(conversationId, userId) {
-        const membership = await ConversationMember.findOne({
-            conversationId,
-            userId,
-            status: "active"
-        });
-        return !!membership;
+        const { authorizationService } = await import("./authorization.service.js");
+        return await authorizationService.checkConversationMembership(userId, conversationId);
     }
 
     /**
@@ -131,10 +128,10 @@ class ReadReceiptService {
             };
 
         } catch (error) {
-            console.error("Error in markSingleMessageAsRead:", error);
+            logger.error({ event: "read_receipt.error", error: error.message }, "Error in markSingleMessageAsRead");
             return {
                 success: false,
-                message: "Internal server error during read receipt processing"
+                message: "Internal server error"
             };
         }
     }

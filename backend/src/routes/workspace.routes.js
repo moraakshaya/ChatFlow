@@ -1,4 +1,9 @@
 import express from "express";
+import { protect } from "../middleware/auth.middleware.js";
+import { validate } from "../middleware/validate.js";
+import { generalRateLimiter } from "../middleware/rateLimit.middleware.js";
+import { validateParamId } from "../validators/common.validator.js";
+import { createWorkspaceValidator, updateWorkspaceValidator } from "../validators/workspace.validator.js";
 import {
     createWorkspace,
     getAllWorkspaces,
@@ -8,18 +13,27 @@ import {
     deleteWorkspace
 } from "../controllers/workspace.controller.js";
 
+import { requireProjectAccess, requireWorkspaceAccess } from "../middleware/authorization.middleware.js";
+
 const router = express.Router();
 
+router.use(protect);
+router.use(generalRateLimiter);
+
 router.route("/")
-    .post(createWorkspace)
-    .get(getAllWorkspaces);
+    .post(validate(createWorkspaceValidator), createWorkspace)
+    .get(getAllWorkspaces); // Typically should also be scoped, but handled in controller or removed if not used globally.
 
+// Apply requireProjectAccess for project specific routes
+router.use("/project/:projectId", requireProjectAccess);
 router.route("/project/:projectId")
-    .get(getWorkspacesByProject);
+    .get(validate([validateParamId("projectId")]), getWorkspacesByProject);
 
+// Apply requireWorkspaceAccess for individual workspace routes
+router.use("/:id", requireWorkspaceAccess);
 router.route("/:id")
-    .get(getWorkspaceById)
-    .patch(updateWorkspace)
-    .delete(deleteWorkspace);
+    .get(validate([validateParamId()]), getWorkspaceById)
+    .patch(validate([validateParamId(), ...updateWorkspaceValidator]), updateWorkspace)
+    .delete(validate([validateParamId()]), deleteWorkspace);
 
 export default router;

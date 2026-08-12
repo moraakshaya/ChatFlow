@@ -15,11 +15,14 @@ export const createOrganization = asyncHandler(async (req, res) => {
     });
 });
 
-// @desc    Get all organizations
+// @desc    Get all organizations (effectively just the user's organization)
 // @route   GET /api/organizations
-// @access  Public
+// @access  Private
 export const getAllOrganizations = asyncHandler(async (req, res) => {
-    const organizations = await Organization.find({ isDeleted: false });
+    const organizations = await Organization.find({ 
+        _id: req.user.organizationId,
+        isDeleted: false 
+    });
 
     res.status(200).json({
         success: true,
@@ -30,8 +33,12 @@ export const getAllOrganizations = asyncHandler(async (req, res) => {
 
 // @desc    Get organization by ID
 // @route   GET /api/organizations/:id
-// @access  Public
+// @access  Private
 export const getOrganizationById = asyncHandler(async (req, res) => {
+    if (req.params.id !== req.user.organizationId.toString()) {
+        return res.status(403).json({ success: false, message: "Forbidden" });
+    }
+
     const organization = await Organization.findOne({
         _id: req.params.id,
         isDeleted: false
@@ -52,17 +59,18 @@ export const getOrganizationById = asyncHandler(async (req, res) => {
 
 // @desc    Get organization by slug
 // @route   GET /api/organizations/slug/:slug
-// @access  Public
+// @access  Private
 export const getOrganizationBySlug = asyncHandler(async (req, res) => {
     const organization = await Organization.findOne({
         slug: req.params.slug,
+        _id: req.user.organizationId,
         isDeleted: false
     });
 
     if (!organization) {
         return res.status(404).json({
             success: false,
-            message: "Organization not found"
+            message: "Organization not found or access denied"
         });
     }
 
@@ -74,8 +82,12 @@ export const getOrganizationBySlug = asyncHandler(async (req, res) => {
 
 // @desc    Update organization
 // @route   PATCH /api/organizations/:id
-// @access  Public
+// @access  Private
 export const updateOrganization = asyncHandler(async (req, res) => {
+    if (req.params.id !== req.user.organizationId.toString()) {
+        return res.status(403).json({ success: false, message: "Forbidden" });
+    }
+
     // Prevent updating isDeleted flag via standard update route
     if (req.body.isDeleted !== undefined) {
         delete req.body.isDeleted;
@@ -106,8 +118,12 @@ export const updateOrganization = asyncHandler(async (req, res) => {
 
 // @desc    Delete organization (Soft Delete)
 // @route   DELETE /api/organizations/:id
-// @access  Public
+// @access  Private
 export const deleteOrganization = asyncHandler(async (req, res) => {
+    if (req.params.id !== req.user.organizationId.toString()) {
+        return res.status(403).json({ success: false, message: "Forbidden" });
+    }
+
     const organization = await Organization.findOneAndUpdate(
         { _id: req.params.id, isDeleted: false },
         {

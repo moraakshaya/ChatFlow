@@ -1,5 +1,10 @@
 import EVENTS from "../events.js";
 import { readReceiptService } from "../../services/readReceipt.service.js";
+import { validateSocketPayload } from "../middleware/validate.socket.js";
+import { validateSocketRateLimit } from "../middleware/rateLimit.socket.js";
+import AppError from "../../errors/AppError.js";
+import { ERROR_CODES } from "../../errors/errorCodes.js";
+import { handleSocketError } from "../middleware/error.socket.js";
 
 /**
  * Registers real-time read receipt handlers for the socket.
@@ -9,21 +14,19 @@ export const registerReadReceiptHandlers = (io, socket) => {
 
     socket.on(EVENTS.READ_MESSAGE, async (payload, callback) => {
         try {
-            const { conversationId, messageId } = payload;
+            if (!validateSocketRateLimit(socket, "MESSAGE_READ")) return;
 
-            if (!conversationId || !messageId) {
-                if (typeof callback === "function") {
-                    callback({ success: false, message: "conversationId and messageId are required" });
-                }
-                return;
-            }
+            if (!validateSocketPayload(socket, payload, {
+                conversationId: { required: true, type: "objectId" },
+                messageId: { required: true, type: "objectId" }
+            })) return;
+
+            const { conversationId, messageId } = payload;
 
             // 1. Verify user membership in this conversation
             const isMember = await readReceiptService.verifyActiveMembership(conversationId, userId);
             if (!isMember) {
-                if (typeof callback === "function") {
-                    callback({ success: false, message: "You do not have access to this conversation" });
-                }
+                handleSocketError(socket, new AppError("You do not have access to this conversation", 403, ERROR_CODES.FORBIDDEN), callback);
                 return;
             }
 
@@ -31,9 +34,9 @@ export const registerReadReceiptHandlers = (io, socket) => {
             const result = await readReceiptService.markSingleMessageAsRead(conversationId, messageId, userId);
 
             if (!result.success) {
-                if (typeof callback === "function") {
-                    callback({ success: false, message: result.message });
-                }
+                // Determine appropriate code based on result message (naive mapping)
+                const code = result.message.includes("not found") ? ERROR_CODES.RESOURCE_NOT_FOUND : ERROR_CODES.BAD_REQUEST;
+                handleSocketError(socket, new AppError(result.message, 400, code), callback);
                 return;
             }
 
@@ -57,10 +60,7 @@ export const registerReadReceiptHandlers = (io, socket) => {
             }
 
         } catch (err) {
-            console.error("Error handling read:message", err);
-            if (typeof callback === "function") {
-                callback({ success: false, message: "Internal server error" });
-            }
+            handleSocketError(socket, err, callback);
         }
     });
 };

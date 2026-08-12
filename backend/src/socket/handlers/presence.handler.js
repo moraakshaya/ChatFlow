@@ -2,6 +2,10 @@ import EVENTS from "../events.js";
 import { presenceService } from "../../services/presence.service.js";
 import ConversationMember from "../../models/ConversationMember.js";
 import mongoose from "mongoose";
+import AppError from "../../errors/AppError.js";
+import { ERROR_CODES } from "../../errors/errorCodes.js";
+import { handleSocketError } from "../middleware/error.socket.js";
+import logger from "../../utils/logger.js";
 
 /**
  * Finds all active conversations for a user to broadcast presence changes.
@@ -18,7 +22,7 @@ const broadcastPresenceTransition = async (io, userId, eventType) => {
             io.to(roomName).emit(eventType, { userId });
         }
     } catch (err) {
-        console.error("Error broadcasting presence transition:", err);
+        logger.error({ event: "presence.broadcast.error", error: err.message, userId, eventType }, "Error broadcasting presence transition");
     }
 };
 
@@ -29,7 +33,7 @@ const broadcastPresenceTransition = async (io, userId, eventType) => {
 export const handleConnect = async (io, socket) => {
     const userId = socket.user._id.toString();
 
-    const isNewOnline = presenceService.registerSocket(userId, socket.id);
+    const isNewOnline = await presenceService.registerSocket(userId, socket.id);
 
     if (isNewOnline) {
         // User transitioned from OFFLINE to ONLINE
@@ -44,7 +48,7 @@ export const handleConnect = async (io, socket) => {
 export const handleDisconnect = async (io, socket) => {
     const userId = socket.user._id.toString();
 
-    const isNowOffline = presenceService.removeSocket(userId, socket.id);
+    const isNowOffline = await presenceService.removeSocket(userId, socket.id);
 
     if (isNowOffline) {
         // User transitioned from ONLINE to OFFLINE
@@ -71,9 +75,7 @@ export const registerPresenceHandlers = (io, socket) => {
             });
 
             if (!isMember) {
-                if (typeof callback === "function") {
-                    callback({ success: false, message: "You do not have access to this conversation" });
-                }
+                handleSocketError(socket, new AppError("You do not have access to this conversation", 403, ERROR_CODES.FORBIDDEN), callback);
                 return;
             }
 
@@ -91,7 +93,7 @@ export const registerPresenceHandlers = (io, socket) => {
             const userIds = allMembers.map(m => m.userId.toString());
 
             // 4. Get their presence states
-            const presenceStates = presenceService.getUsersPresence(userIds);
+            const presenceStates = await presenceService.getUsersPresence(userIds);
 
             // 5. Emit the snapshot back only to the requesting socket
             socket.emit(EVENTS.PRESENCE_STATE, {
@@ -100,10 +102,7 @@ export const registerPresenceHandlers = (io, socket) => {
             });
 
         } catch (err) {
-            console.error("Error handling presence:get", err);
-            if (typeof callback === "function") {
-                callback({ success: false, message: "Internal server error" });
-            }
+            handleSocketError(socket, err, callback);
         }
     });
 };

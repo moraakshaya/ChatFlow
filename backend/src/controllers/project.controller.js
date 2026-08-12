@@ -46,8 +46,12 @@ export const getAllProjects = asyncHandler(async (req, res) => {
 
 // @desc    Get projects by Organization ID
 // @route   GET /api/projects/organization/:organizationId
-// @access  Public
+// @access  Private
 export const getProjectsByOrganization = asyncHandler(async (req, res) => {
+    if (req.params.organizationId !== req.user.organizationId.toString()) {
+        return res.status(403).json({ success: false, message: "Forbidden" });
+    }
+
     const projects = await Project.find({
         organizationId: req.params.organizationId,
         isDeleted: false

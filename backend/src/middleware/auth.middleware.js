@@ -1,5 +1,7 @@
 import { verifyAccessToken } from "../utils/jwt.js";
 import User from "../models/User.js";
+import AppError from "../errors/AppError.js";
+import { ERROR_CODES } from "../errors/errorCodes.js";
 
 export const protect = async (req, res, next) => {
     let token;
@@ -14,33 +16,21 @@ export const protect = async (req, res, next) => {
             const user = await User.findById(decoded.userId).select("-password");
 
             if (!user) {
-                return res.status(401).json({
-                    success: false,
-                    message: "User no longer exists",
-                });
+                return next(new AppError("User no longer exists", 401, ERROR_CODES.AUTH_REQUIRED));
             }
 
             if (user.status !== "active") {
-                return res.status(401).json({
-                    success: false,
-                    message: "User account is not active",
-                });
+                return next(new AppError("User account is not active", 401, ERROR_CODES.AUTH_REQUIRED));
             }
 
             req.user = user;
-            next();
+            return next();
         } catch (error) {
-            return res.status(401).json({
-                success: false,
-                message: "Not authorized, token failed",
-            });
+            return next(new AppError("Not authorized, token failed", 401, ERROR_CODES.INVALID_TOKEN));
         }
     }
 
     if (!token) {
-        return res.status(401).json({
-            success: false,
-            message: "Not authorized, no token provided",
-        });
+        return next(new AppError("Not authorized, no token provided", 401, ERROR_CODES.AUTH_REQUIRED));
     }
 };

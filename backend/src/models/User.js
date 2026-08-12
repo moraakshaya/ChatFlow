@@ -7,6 +7,14 @@ const userSchema = new mongoose.Schema(
             ref: "Organization",
             required: true,
         },
+        isExternal: {
+            type: Boolean,
+            default: false,
+        },
+        externalUserId: {
+            type: String,
+            default: null,
+        },
         fullName: {
             type: String,
             required: true,
@@ -47,6 +55,12 @@ const userSchema = new mongoose.Schema(
             type: Boolean,
             default: false,
         },
+        notificationPreferences: {
+            messages: { type: Boolean, default: true },
+            mentions: { type: Boolean, default: true },
+            reactions: { type: Boolean, default: true },
+            conversationAlerts: { type: Boolean, default: true }
+        }
     },
     {
         timestamps: true,

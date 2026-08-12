@@ -20,5 +20,18 @@ export default {
 
     // Read Receipts
     READ_MESSAGE: 'read:message',
-    MESSAGE_READ: 'message:read'
+    MESSAGE_READ: 'message:read',
+
+    // Message Reactions
+    REACTION_ADD: 'reaction:add',
+    REACTION_REMOVE: 'reaction:remove',
+    REACTION_ADDED: 'reaction:added',
+    REACTION_REMOVED: 'reaction:removed',
+    REACTION_ERROR: 'reaction:error',
+
+    // Notifications
+    NOTIFICATION_NEW: 'notification:new',
+
+    // Unread Counters
+    UNREAD_UPDATE: 'unread:update'
 };

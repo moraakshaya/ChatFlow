@@ -20,8 +20,11 @@ const socketB = io("http://localhost:5000", { auth: { token: tokenB } });
 
 socketB.on("connect", () => {
     socketB.emit("join_conversation", { conversationId });
-    socketB.on("message:read", (data) => {
-        console.log("✅ Socket B received message:read event!", data);
+    socketB.on("reaction:added", (data) => {
+        console.log("✅ Socket B received reaction:added!", data);
+    });
+    socketB.on("reaction:removed", (data) => {
+        console.log("✅ Socket B received reaction:removed!", data);
     });
 });
 
@@ -29,14 +32,14 @@ socketA.on("connect", () => {
     socketA.emit("join_conversation", { conversationId });
 
     setTimeout(() => {
-        console.log("Socket A emitting read:message (First read)...");
-        socketA.emit("read:message", { conversationId, messageId: "new_read_msg" }, (response) => {
-            console.log("Socket A received ack (First read):", response);
+        console.log("Socket A emitting reaction:add...");
+        socketA.emit("reaction:add", { conversationId, messageId: "message123", reaction: "❤️" }, (response) => {
+            console.log("Socket A received add ack:", response);
             
             setTimeout(() => {
-                console.log("Socket A emitting read:message (Repeated read)...");
-                socketA.emit("read:message", { conversationId, messageId: "already_read_msg" }, (response2) => {
-                    console.log("Socket A received ack (Repeated read):", response2);
+                console.log("Socket A emitting reaction:remove...");
+                socketA.emit("reaction:remove", { conversationId, messageId: "message123", reaction: "❤️" }, (response2) => {
+                    console.log("Socket A received remove ack:", response2);
                     
                     setTimeout(() => {
                         socketA.disconnect();
@@ -49,6 +52,5 @@ socketA.on("connect", () => {
     }, 1000);
 });
 
-socketA.on("message:read", (data) => {
-    console.error("❌ Socket A received message:read event incorrectly!", data);
-});
+socketA.on("reaction:added", () => { console.error("❌ Socket A received added event incorrectly!"); });
+socketA.on("reaction:removed", () => { console.error("❌ Socket A received removed event incorrectly!"); });
