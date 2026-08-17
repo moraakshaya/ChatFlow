@@ -72,7 +72,7 @@ src/
 | `createdAt` | `Date` | Yes | Timestamp of creation |
 | `updatedAt` | `Date` | Yes | Timestamp of last update |
 
-**Note**: The owner field is initially null because the User module is created later. Once a user registers, the user's `_id` will be assigned as the organization owner.
+**Note**: The owner field is populated during the user registration process, which dynamically creates the Organization and assigns the new user as the owner.
 
 ---
 
@@ -112,28 +112,40 @@ This section outlines the REST API endpoints for managing organizations.
 
 ### Current APIs
 
-#### 1. Create Organization `[POST]`
-Creates a new organization in the platform.
+#### 1. Create Organization (via Registration) `[POST]`
+Creates a new organization implicitly during user registration.
 
-- **Endpoint:** `POST /api/organizations`
-- **Explanation:** This API is called immediately after a user registers if they are setting up a new tenant space. It initializes the workspace.
+- **Endpoint:** `POST /api/auth/register`
+- **Explanation:** This API is called when a user registers to set up a new tenant space. It initializes the organization, creates the user as an owner, and links them.
 - **Request Body:**
   ```json
   {
-      "name": "LeadFlow Technologies",
-      "slug": "leadflow"
+      "organizationName": "LeadFlow Technologies",
+      "fullName": "John Doe",
+      "email": "john@leadflow.com",
+      "password": "StrongPassword123"
   }
   ```
 - **Success Response (201 Created):**
   ```json
   {
       "success": true,
-      "message": "Organization created successfully",
+      "message": "User registered successfully",
       "data": {
-          "_id": "64f1b2...",
-          "name": "LeadFlow Technologies",
-          "slug": "leadflow",
-          "status": "active"
+          "user": {
+              "_id": "64f1b2...",
+              "fullName": "John Doe",
+              "email": "john@leadflow.com",
+              "role": "owner"
+          },
+          "organization": {
+              "_id": "83x2c9...",
+              "name": "LeadFlow Technologies",
+              "slug": "leadflow",
+              "plan": "free"
+          },
+          "accessToken": "ey...",
+          "refreshToken": "ey..."
       }
   }
   ```

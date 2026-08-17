@@ -255,6 +255,7 @@ users
 | `fullName`        | String   | Yes      | User's display name           |
 | `email`           | String   | Yes      | Login email                   |
 | `password`        | String   | Yes      | bcrypt password hash          |
+| `role`            | String   | Yes      | owner / admin / member        |
 | `avatar`          | String   | No       | Profile image                 |
 | `phone`           | String   | No       | Phone number                  |
 | `status`          | String   | Yes      | active / inactive / suspended |
@@ -313,6 +314,7 @@ It also allows a previously soft-deleted account to be registered again if the b
     "fullName": "Akshaya",
     "email": "akshaya@example.com",
     "password": "$2b$12$hashed-password",
+    "role": "owner",
     "avatar": null,
     "phone": null,
     "status": "active",
@@ -725,7 +727,10 @@ POST /api/auth/register
 Validate Request
   │
   ▼
-Validate Organization
+Validate Organization Name
+  │
+  ▼
+Create Organization
   │
   ▼
 Normalize Email
@@ -793,11 +798,37 @@ POST /api/auth/register
 
 ```json
 {
-    "organizationId": "6895xxxxxxxx",
+    "organizationName": "ABC Technologies",
     "fullName": "Akshaya",
     "email": "akshaya@example.com",
     "password": "StrongPassword123"
 }
+```
+
+### Response (201 Created)
+
+```json
+{
+    "success": true,
+    "message": "User registered successfully",
+    "data": {
+        "user": {
+            "_id": "6897xxxxxxxx",
+            "fullName": "Akshaya",
+            "email": "akshaya@example.com",
+            "role": "owner"
+        },
+        "organization": {
+            "_id": "6895xxxxxxxx",
+            "name": "ABC Technologies",
+            "slug": "abc-technologies",
+            "plan": "free"
+        },
+        "accessToken": "eyJhbGciOi...",
+        "refreshToken": "def456ghi..."
+    }
+}
+```
 ```
 
 ### Success Response

@@ -12,30 +12,41 @@ import { sendPasswordResetEmail } from "../utils/email.js";
 // @route   POST /api/auth/register
 // @access  Public
 export const register = asyncHandler(async (req, res) => {
-    const { organizationId, fullName, email, password } = req.body;
+    const { organizationName, fullName, email, password } = req.body;
 
-    // Validate organization
-    const org = await Organization.findOne({ _id: organizationId, isDeleted: false, status: "active" });
-    if (!org) {
-        return res.status(404).json({ success: false, message: "Organization not found or inactive" });
-    }
-
-    // Check if user already exists
-    const existingUser = await User.findOne({ organizationId, email: email.toLowerCase(), isDeleted: false });
-    if (existingUser) {
-        return res.status(409).json({ success: false, message: "User with this email already exists" });
+    // Check if user already exists across the platform (if email is globally unique) or just let it pass until org creation
+    // Wait, since we are creating an org, the email should just not exist in the new org (which it won't).
+    
+    // Generate slug from organizationName
+    const slug = organizationName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    
+    // Check if organization slug already exists
+    const existingOrg = await Organization.findOne({ slug });
+    if (existingOrg) {
+        return res.status(409).json({ success: false, message: "Organization name already exists (try a different one)" });
     }
 
     // Hash password
     const hashedPassword = await hashPassword(password);
 
+    // Create organization
+    const org = await Organization.create({
+        name: organizationName,
+        slug
+    });
+
     // Create user
     const user = await User.create({
-        organizationId,
+        organizationId: org._id,
         fullName,
         email: email.toLowerCase(),
         password: hashedPassword,
+        role: "owner"
     });
+
+    // Assign owner to organization
+    org.owner = user._id;
+    await org.save();
 
     // Create tokens and session
     const accessToken = generateAccessToken(user._id, user.organizationId);
@@ -59,7 +70,8 @@ export const register = asyncHandler(async (req, res) => {
         success: true,
         message: "User registered successfully",
         data: {
-            user: { _id: user._id, fullName: user.fullName, email: user.email },
+            user: { _id: user._id, fullName: user.fullName, email: user.email, role: user.role },
+            organization: { _id: org._id, name: org.name, slug: org.slug, plan: org.plan },
             accessToken,
             refreshToken,
         },
@@ -99,11 +111,14 @@ export const login = asyncHandler(async (req, res) => {
         lastUsedAt: new Date(),
     });
 
+    const org = await Organization.findById(user.organizationId);
+
     res.status(200).json({
         success: true,
         message: "Login successful",
         data: {
-            user: { _id: user._id, fullName: user.fullName, email: user.email },
+            user: { _id: user._id, fullName: user.fullName, email: user.email, role: user.role },
+            organization: org ? { _id: org._id, name: org.name, slug: org.slug, plan: org.plan } : null,
             accessToken,
             refreshToken,
         },

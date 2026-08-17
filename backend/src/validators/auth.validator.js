@@ -1,11 +1,15 @@
 import { body } from "express-validator";
 
 export const signupValidator = [
-    body("name")
+    body("organizationName")
         .trim()
-        .notEmpty().withMessage("Name is required")
-        .isString().withMessage("Name must be a string")
-        .isLength({ max: 50 }).withMessage("Name cannot exceed 50 characters"),
+        .notEmpty().withMessage("Organization Name is required")
+        .isString().withMessage("Organization Name must be a string"),
+    body("fullName")
+        .trim()
+        .notEmpty().withMessage("Full name is required")
+        .isString().withMessage("Full name must be a string")
+        .isLength({ max: 50 }).withMessage("Full name cannot exceed 50 characters"),
     body("email")
         .trim()
         .notEmpty().withMessage("Email is required")

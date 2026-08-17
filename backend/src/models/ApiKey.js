@@ -57,8 +57,7 @@ const apiKeySchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-// Optimize keyId lookups since it's the primary authentication identifier
-apiKeySchema.index({ keyId: 1 }, { unique: true });
+// Optimize lookups
 apiKeySchema.index({ projectId: 1 });
 apiKeySchema.index({ organizationId: 1 });
 

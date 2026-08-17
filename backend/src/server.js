@@ -1,4 +1,4 @@
-import dotenv from "dotenv";
+import "dotenv/config";
 import { createServer } from "http";
 import app from "./app.js";
 import connectDB from "./config/database.js";
@@ -23,7 +23,6 @@ import notificationRoutes from "./routes/notification.routes.js";
 import unreadRoutes from "./routes/unread.routes.js";
 import notificationPreferenceRoutes from "./routes/notificationPreference.routes.js";
 
-dotenv.config();
 
 // Mount Routes
 app.use("/api/auth", authRoutes);
