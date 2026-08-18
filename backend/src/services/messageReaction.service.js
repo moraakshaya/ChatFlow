@@ -33,7 +33,7 @@ class MessageReactionService {
             return { error: { status: 403, message: "You are not an active member of this conversation" } };
         }
 
-        return { message, conversation, membership };
+        return { message, conversation };
     }
 
     /**

@@ -9,11 +9,13 @@ import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import conversationRoutes from "./routes/conversation.routes.js";
 import conversationMemberRoutes from "./routes/conversationMember.routes.js";
+import unreadRoutes from "./routes/unread.routes.js";
 import messageRoutes from "./routes/message.routes.js";
 import messageReactionRoutes from "./routes/messageReaction.routes.js";
 import readReceiptRoutes from "./routes/readReceipt.routes.js";
 import attachmentRoutes from "./routes/attachment.routes.js";
 import messageSearchRoutes from "./routes/messageSearch.routes.js";
+import notificationRoutes from "./routes/notification.routes.js";
 import apiKeyRoutes from "./routes/apiKey.routes.js";
 import webhookRoutes from "./routes/webhook.routes.js";
 import widgetRoutes from "./routes/public/v1/widget.routes.js";
@@ -40,6 +42,7 @@ app.use("/api/projects/:projectId/widget", widgetRoutes);
 app.use("/api/workspaces", workspaceRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/conversations", unreadRoutes); // Mount unread routes first to avoid catching /unread as an :id
 app.use("/api/conversations", conversationRoutes);
 app.use("/api/conversation-members", conversationMemberRoutes);
 app.use("/api/messages/search", messageSearchRoutes);
@@ -47,6 +50,7 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/message-reactions", messageReactionRoutes);
 app.use("/api/read-receipts", readReceiptRoutes);
 app.use("/api/attachments", attachmentRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // --- Public API Routes (v1) ---
 app.use("/api/v1/conversations", publicV1ConversationRoutes);

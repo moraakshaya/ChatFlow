@@ -1,6 +1,41 @@
 import User from "../models/User.js";
 import UserSession from "../models/UserSession.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import { hashPassword } from "../utils/password.js";
+
+// @desc    Create a new user in the organization
+// @route   POST /api/users
+// @access  Private (Admin/Owner)
+export const createUser = asyncHandler(async (req, res) => {
+    const { fullName, email, password, role } = req.body;
+
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+        return res.status(409).json({ success: false, message: "User with this email already exists" });
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    const user = await User.create({
+        organizationId: req.user.organizationId,
+        fullName,
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        role: role || "member",
+        status: "active"
+    });
+
+    res.status(201).json({
+        success: true,
+        message: "User created successfully",
+        data: {
+            _id: user._id,
+            fullName: user.fullName,
+            email: user.email,
+            role: user.role
+        }
+    });
+});
 
 // @desc    Get all users (in reality, filter by organization or workspace roles)
 // @route   GET /api/users

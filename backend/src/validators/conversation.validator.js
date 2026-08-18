@@ -3,7 +3,7 @@ import { body } from "express-validator";
 export const createConversationValidator = [
     body("type")
         .notEmpty().withMessage("Conversation type is required")
-        .isIn(["DIRECT", "GROUP"]).withMessage("Type must be DIRECT or GROUP"),
+        .isIn(["private", "group", "channel"]).withMessage("Type must be private, group, or channel"),
     body("workspaceId")
         .optional()
         .isMongoId().withMessage("Invalid workspace ID format"),
