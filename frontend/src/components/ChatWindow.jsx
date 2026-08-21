@@ -8,6 +8,7 @@ import ChannelHeader from './ChannelHeader';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import ManageMembersModal from './ManageMembersModal';
+import ChannelSettingsModal from './ChannelSettingsModal';
 
 const ChatWindow = () => {
     const { id: conversationId } = useParams();
@@ -22,6 +23,7 @@ const ChatWindow = () => {
     const [newMessage, setNewMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
     const [isManageMembersOpen, setIsManageMembersOpen] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     // Set of messageIds that have been read by the other person (for blue ticks in DMs)
     const [readMessageIds, setReadMessageIds] = useState(new Set());
@@ -148,6 +150,7 @@ const ChatWindow = () => {
             <ChannelHeader
                 channel={activeChannel}
                 onManageMembers={() => setIsManageMembersOpen(true)}
+                onOpenSettings={() => setIsSettingsOpen(true)}
                 typingText={typingUsers.size > 0 ? buildTypingText(typingUsers) : null}
             />
 
@@ -346,6 +349,13 @@ const ChatWindow = () => {
             <ManageMembersModal
                 isOpen={isManageMembersOpen}
                 onClose={() => setIsManageMembersOpen(false)}
+                channel={activeChannel}
+            />
+
+            {/* Channel Settings Modal */}
+            <ChannelSettingsModal
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
                 channel={activeChannel}
             />
         </div>

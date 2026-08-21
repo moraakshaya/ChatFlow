@@ -10,6 +10,7 @@ import CreateChannelModal from './CreateChannelModal';
 import NewDMModal from './NewDMModal';
 import InviteMembersModal from './InviteMembersModal';
 import NotificationsPanel from './NotificationsPanel';
+import SettingsModal from './SettingsModal';
 import { 
     Hash, 
     MessageSquare, 
@@ -44,6 +45,7 @@ const Sidebar = () => {
     const [isNewDMModalOpen, setIsNewDMModalOpen] = useState(false);
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     // Filter conversations by type
     const channels = conversations.filter(c => c.type === 'channel' || c.type === 'private_channel' || c.type === 'group');
@@ -273,7 +275,11 @@ const Sidebar = () => {
                             </button>
                         </div>
                         
-                        <button className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-colors" title="Settings">
+                        <button 
+                            onClick={() => setIsSettingsOpen(true)}
+                            className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-colors" 
+                            title="Settings"
+                        >
                             <Settings size={16} />
                         </button>
                         <button onClick={logout} className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded-md transition-colors" title="Logout">
@@ -310,6 +316,11 @@ const Sidebar = () => {
             <InviteMembersModal
                 isOpen={isInviteModalOpen}
                 onClose={() => setIsInviteModalOpen(false)}
+            />
+
+            <SettingsModal
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
             />
         </>
     );

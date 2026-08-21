@@ -68,6 +68,19 @@ class MessageService {
             status: "active",
             userId: { $ne: senderId }
         }).then(members => {
+            const senderName = message.senderId?.fullName || "Someone";
+            let notifTitle = senderName;
+            if (conversation && conversation.type !== "private") {
+                notifTitle = `${senderName} in #${conversation.name || "channel"}`;
+            }
+
+            let msgSnippet = "Sent a message";
+            if (type === "text" && content) {
+                msgSnippet = content.length > 50 ? `"${content.substring(0, 50)}..."` : `"${content}"`;
+            } else if (type === "attachment") {
+                msgSnippet = "Sent an attachment";
+            }
+
             members.forEach(member => {
                 unreadService.emitUnreadUpdate(conversationId, member.userId).catch(err => 
                     logger.error({ event: "unread.broadcast.error", error: err.message }, "Failed to emit unread update")
@@ -76,8 +89,8 @@ class MessageService {
                 notificationService.createNotification({
                     recipient: member.userId,
                     type: "MESSAGE",
-                    title: "New Message",
-                    message: "You have a new message",
+                    title: notifTitle,
+                    message: msgSnippet,
                     conversation: conversationId,
                     sourceMessage: message._id,
                     actor: senderId

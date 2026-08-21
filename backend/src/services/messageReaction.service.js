@@ -4,6 +4,7 @@ import Conversation from "../models/Conversation.js";
 import ConversationMember from "../models/ConversationMember.js";
 import { notificationService } from "./notification.service.js";
 import mongoose from "mongoose";
+import User from "../models/User.js";
 import logger from "../utils/logger.js";
 
 class MessageReactionService {
@@ -67,11 +68,14 @@ class MessageReactionService {
 
             // Generate Notification for the message owner
             if (message.senderId.toString() !== userId.toString()) {
+                const actor = await User.findById(userId).select("fullName");
+                const actorName = actor ? actor.fullName : "Someone";
+
                 notificationService.createNotification({
                     recipient: message.senderId,
                     type: "REACTION",
-                    title: "New Reaction",
-                    message: `Someone reacted ${reaction} to your message`,
+                    title: `Reaction from ${actorName}`,
+                    message: `${actorName} reacted ${reaction} to your message`,
                     conversation: conversation._id,
                     sourceMessage: messageId,
                     actor: userId

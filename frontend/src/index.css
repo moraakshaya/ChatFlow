@@ -34,3 +34,9 @@ body {
   0%, 60%, 100% { transform: translateY(0);     opacity: 0.6; }
   30%            { transform: translateY(-5px);  opacity: 1; }
 }
+
+/* ── Hide Browser Default Password Icons (Edge/IE) ───────────────────────── */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Hash, Users, Settings } from 'lucide-react';
 
-const ChannelHeader = ({ channel, onManageMembers, typingText }) => {
+const ChannelHeader = ({ channel, onManageMembers, onOpenSettings, typingText }) => {
     if (!channel) return null;
 
     const isPrivate = channel.type === 'private';
@@ -42,13 +42,17 @@ const ChannelHeader = ({ channel, onManageMembers, typingText }) => {
             <div className="flex items-center gap-3">
                 {!isPrivate && (
                     <div className="flex items-center gap-4">
-                        <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                        <button 
+                            onClick={onManageMembers}
+                            className="text-gray-400 hover:text-blue-600 transition-colors"
+                            title="Manage Members"
+                        >
                             <Users size={18} />
                         </button>
                         <button
-                            onClick={onManageMembers}
-                            className="text-gray-400 hover:text-blue-600 transition-colors"
-                            title="Manage Channel Details"
+                            onClick={onOpenSettings}
+                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                            title="Channel Settings"
                         >
                             <Settings size={18} />
                         </button>

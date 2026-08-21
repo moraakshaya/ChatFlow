@@ -3,6 +3,7 @@ import ConversationMember from "../models/ConversationMember.js";
 import Conversation from "../models/Conversation.js";
 import User from "../models/User.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import { notificationService } from "../services/notification.service.js";
 
 // @desc    Add member to conversation
 // @route   POST /api/conversation-members
@@ -62,6 +63,19 @@ export const addMember = asyncHandler(async (req, res) => {
             addedBy: req.user._id,
             status: "active"
         });
+    }
+
+    // Dispatch Notification
+    if (membership.userId.toString() !== req.user._id.toString()) {
+        const convName = conversation.type === "private" ? "a direct message" : `the ${conversation.type} "${conversation.name}"`;
+        notificationService.createNotification({
+            recipient: membership.userId,
+            type: "CONVERSATION",
+            title: "Added to Conversation",
+            message: `You were added to ${convName} by ${req.user.fullName}.`,
+            conversation: conversationId,
+            actor: req.user._id
+        }).catch(err => console.error("Failed to create notification:", err));
     }
 
     res.status(201).json({
@@ -211,6 +225,21 @@ export const updateRole = asyncHandler(async (req, res) => {
     membership.role = role;
     await membership.save();
 
+    // Dispatch Notification
+    if (membership.userId.toString() !== req.user._id.toString()) {
+        const conversation = await Conversation.findById(membership.conversationId);
+        const convName = conversation && conversation.type !== "private" ? `the ${conversation.type} "${conversation.name}"` : "a conversation";
+        
+        notificationService.createNotification({
+            recipient: membership.userId,
+            type: "CONVERSATION",
+            title: "Role Updated",
+            message: `Your role in ${convName} was updated to ${role} by ${req.user.fullName}.`,
+            conversation: membership.conversationId,
+            actor: req.user._id
+        }).catch(err => console.error("Failed to create notification:", err));
+    }
+
     res.status(200).json({
         success: true,
         message: "Member role updated successfully",
@@ -242,6 +271,20 @@ export const removeMember = asyncHandler(async (req, res) => {
     membership.status = "removed";
     membership.removedAt = new Date();
     await membership.save();
+
+    // Dispatch Notification
+    if (membership.userId.toString() !== req.user._id.toString()) {
+        const conversation = await Conversation.findById(membership.conversationId);
+        const convName = conversation && conversation.type !== "private" ? `the ${conversation.type} "${conversation.name}"` : "a conversation";
+
+        notificationService.createNotification({
+            recipient: membership.userId,
+            type: "CONVERSATION",
+            title: "Removed from Conversation",
+            message: `You were removed from ${convName} by ${req.user.fullName}.`,
+            actor: req.user._id
+        }).catch(err => console.error("Failed to create notification:", err));
+    }
 
     res.status(200).json({
         success: true,

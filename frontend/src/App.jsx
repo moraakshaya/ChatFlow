@@ -8,6 +8,8 @@ import { SocketProvider } from './context/SocketContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import DashboardLayout from './layouts/DashboardLayout';
 import ChatWindow from './components/ChatWindow';
@@ -43,6 +45,22 @@ function App() {
                 element={
                   <PublicRoute>
                     <Register />
+                  </PublicRoute>
+                } 
+              />
+              <Route 
+                path="/forgot-password" 
+                element={
+                  <PublicRoute>
+                    <ForgotPassword />
+                  </PublicRoute>
+                } 
+              />
+              <Route 
+                path="/reset-password" 
+                element={
+                  <PublicRoute>
+                    <ResetPassword />
                   </PublicRoute>
                 } 
               />
