@@ -43,6 +43,31 @@ export const createConversation = asyncHandler(async (req, res) => {
     });
 });
 
+// @desc    Start or retrieve a direct message conversation
+// @route   POST /api/conversations/direct
+// @access  Private
+export const createDirectConversation = asyncHandler(async (req, res) => {
+    const { targetUserId, workspaceId, projectId } = req.body;
+
+    const conversation = await conversationService.createDirectConversation(
+        req.user._id,
+        targetUserId,
+        workspaceId,
+        projectId,
+        req.user.organizationId
+    );
+
+    res.status(201).json({
+        success: true,
+        message: "Direct conversation ready",
+        data: {
+            _id: conversation._id,
+            type: conversation.type,
+            status: conversation.status
+        }
+    });
+});
+
 // @desc    Get all accessible conversations (with pagination)
 // @route   GET /api/conversations
 // @access  Private

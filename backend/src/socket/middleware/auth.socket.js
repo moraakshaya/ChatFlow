@@ -17,7 +17,7 @@ export const verifySocketToken = async (socket, next) => {
         const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
 
         // Fetch user from DB to ensure they still exist and are active
-        const user = await User.findById(decoded.id).select("-password");
+        const user = await User.findById(decoded.userId).select("-password");
 
         if (!user) {
             return next(new Error("Authentication error: User not found"));

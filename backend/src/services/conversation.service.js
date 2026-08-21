@@ -71,6 +71,52 @@ class ConversationService {
         return conversation;
     }
 
+    async createDirectConversation(userId, targetUserId, workspaceId, projectId, organizationId) {
+        if (!targetUserId || !workspaceId || !projectId) {
+            throw new AppError("targetUserId, workspaceId, and projectId are required", 400, ERROR_CODES.VALIDATION_ERROR);
+        }
+
+        // Generate consistent directKey (sort IDs alphabetically)
+        const directKey = [userId.toString(), targetUserId.toString()].sort().join("_");
+
+        // Check if DM already exists
+        let conversation = await Conversation.findOne({ directKey, isDeleted: false });
+        
+        if (conversation) {
+            return conversation;
+        }
+
+        // Create new private conversation
+        conversation = await Conversation.create({
+            workspaceId,
+            projectId,
+            organizationId,
+            type: "private",
+            directKey,
+            createdBy: userId
+        });
+
+        // Add both users as active members
+        await ConversationMember.insertMany([
+            {
+                conversationId: conversation._id,
+                userId: userId,
+                role: "member",
+                status: "active",
+                joinedAt: new Date()
+            },
+            {
+                conversationId: conversation._id,
+                userId: targetUserId,
+                role: "member",
+                status: "active",
+                joinedAt: new Date()
+            }
+        ]);
+
+        return conversation;
+    }
+
     async getConversationsForUser(userId, queryParams = {}) {
         const page = parseInt(queryParams.page, 10) || 1;
         const limit = parseInt(queryParams.limit, 10) || 20;
@@ -94,10 +140,38 @@ class ConversationService {
         if (queryParams.type) query.type = queryParams.type;
         if (queryParams.status) query.status = queryParams.status;
 
-        const conversations = await Conversation.find(query)
+        let conversations = await Conversation.find(query)
             .sort({ lastMessageAt: -1, createdAt: -1 })
             .skip(startIndex)
-            .limit(actualLimit);
+            .limit(actualLimit)
+            .lean(); // Use lean to easily attach targetUser property
+
+        // For private conversations, populate the target user's details
+        const privateConvIds = conversations.filter(c => c.type === "private").map(c => c._id);
+        
+        if (privateConvIds.length > 0) {
+            // Find all members in these private conversations
+            const privateMembers = await ConversationMember.find({
+                conversationId: { $in: privateConvIds },
+                status: "active"
+            }).populate("userId", "fullName email avatar status isDeleted");
+
+            conversations = conversations.map(conv => {
+                if (conv.type === "private") {
+                    // Find the member who is NOT the current user
+                    const targetMember = privateMembers.find(
+                        m => m.conversationId.toString() === conv._id.toString() && 
+                             m.userId && 
+                             m.userId._id.toString() !== userId.toString()
+                    );
+                    
+                    if (targetMember && targetMember.userId) {
+                        conv.targetUser = targetMember.userId;
+                    }
+                }
+                return conv;
+            });
+        }
         
         const total = await Conversation.countDocuments(query);
 

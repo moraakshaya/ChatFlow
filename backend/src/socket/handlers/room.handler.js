@@ -6,15 +6,17 @@ import { validateSocketRateLimit } from "../middleware/rateLimit.socket.js";
 import AppError from "../../errors/AppError.js";
 import { ERROR_CODES } from "../../errors/errorCodes.js";
 import { handleSocketError } from "../middleware/error.socket.js";
+import { authorizationService } from "../../services/authorization.service.js";
+import logger from "../../utils/logger.js";
 
 /**
  * Validates if the user is an active member of the requested conversation.
  */
 export const verifyConversationAccess = async (conversationId, userId) => {
     try {
-        const { authorizationService } = await import("../../services/authorization.service.js");
         return await authorizationService.checkConversationMembership(userId, conversationId);
     } catch (error) {
+        logger.error({ event: "verify_access_error", error: error.message }, "Failed to verify conversation access");
         return false;
     }
 };

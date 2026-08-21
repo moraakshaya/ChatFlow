@@ -13,6 +13,8 @@ export default {
 
     // Server to Client
     NEW_MESSAGE: 'new_message',
+    MESSAGE_UPDATED: 'message_updated',
+    MESSAGE_DELETED: 'message_deleted',
     MESSAGE_REACTION: 'message_reaction',
     USER_ONLINE: 'user_online',
     USER_OFFLINE: 'user_offline',

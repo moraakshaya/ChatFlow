@@ -24,7 +24,8 @@ class UnreadService {
 
         const query = {
             conversationId,
-            senderId: { $ne: userId } // Exclude user's own messages
+            senderId: { $ne: userId }, // Exclude user's own messages
+            isDeleted: false // Exclude deleted messages
         };
 
         if (membership.lastReadMessageId) {
@@ -125,6 +126,12 @@ class UnreadService {
             membership.lastReadAt = new Date();
             await membership.save();
         }
+
+        // Also mark all in-app notifications for this conversation as read
+        await mongoose.model("Notification").updateMany(
+            { recipient: userId, conversation: conversationId, isRead: false },
+            { $set: { isRead: true } }
+        );
 
         // Emit real-time update indicating unread count is now 0 (and total unread is updated)
         await this.emitUnreadUpdate(conversationId, userId);

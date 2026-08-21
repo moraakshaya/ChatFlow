@@ -61,7 +61,8 @@ export const registerTypingHandlers = (io, socket) => {
         const roomName = `conversation_${conversationId}`;
         socket.to(roomName).emit(EVENTS.TYPING_START, {
             conversationId,
-            userId
+            userId,
+            userName: socket.user.fullName
         });
 
         // Set or reset server timeout (5 seconds)

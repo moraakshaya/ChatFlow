@@ -12,11 +12,42 @@ class RealtimeService {
         try {
             const io = getIo();
             const roomName = `conversation_${conversationId}`;
+            
             io.to(roomName).emit(EVENTS.NEW_MESSAGE, { message });
+            
+            logger.debug(`Broadcasted new message to room ${roomName}`);
         } catch (error) {
             logger.error({ event: "realtime.message.error", error: error.message }, "Failed to emit new message event");
             // We log the error but don't throw, as REST should still succeed
             // if real-time delivery temporarily fails.
+        }
+    }
+
+    /**
+     * Broadcasts a message update.
+     */
+    emitMessageUpdated(conversationId, message) {
+        try {
+            const io = getIo();
+            const roomName = `conversation_${conversationId}`;
+            io.to(roomName).emit(EVENTS.MESSAGE_UPDATED, { message });
+            logger.debug(`Broadcasted message update to room ${roomName}`);
+        } catch (error) {
+            logger.error({ event: "realtime.message_update.error", error: error.message }, "Failed to emit message update event");
+        }
+    }
+
+    /**
+     * Broadcasts a message deletion.
+     */
+    emitMessageDeleted(conversationId, messageId) {
+        try {
+            const io = getIo();
+            const roomName = `conversation_${conversationId}`;
+            io.to(roomName).emit(EVENTS.MESSAGE_DELETED, { messageId, conversationId });
+            logger.debug(`Broadcasted message deletion to room ${roomName}`);
+        } catch (error) {
+            logger.error({ event: "realtime.message_delete.error", error: error.message }, "Failed to emit message delete event");
         }
     }
 

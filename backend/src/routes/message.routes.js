@@ -2,7 +2,6 @@ import express from "express";
 import {
     sendMessage,
     getMessages,
-    editMessage,
     deleteMessage
 } from "../controllers/message.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
@@ -22,8 +21,6 @@ router.route("/")
 router.route("/conversation/:conversationId")
     .get(validate([validateParamId("conversationId"), ...validatePagination]), getMessages);
 
-router.route("/:messageId")
-    .patch(editMessage)
-    .delete(deleteMessage);
+router.delete("/:messageId", deleteMessage);
 
 export default router;

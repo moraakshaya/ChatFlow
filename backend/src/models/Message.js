@@ -35,7 +35,7 @@ const messageSchema = new mongoose.Schema(
             type: String,
             maxlength: 4000,
             required: function () {
-                return this.type === "text";
+                return this.type === "text" && !this.isDeleted;
             },
         },
         attachments: {

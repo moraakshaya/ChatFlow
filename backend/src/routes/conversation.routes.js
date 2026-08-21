@@ -1,6 +1,7 @@
 import express from "express";
 import {
     createConversation,
+    createDirectConversation,
     getConversations,
     getConversationById,
     getConversationsByWorkspace,
@@ -26,6 +27,8 @@ router.use(generalRateLimiter);
 router.route("/")
     .post(validate(createConversationValidator), createConversation)
     .get(getConversations);
+
+router.post("/direct", createDirectConversation);
 
 // Apply requireWorkspaceAccess
 router.use("/workspace/:workspaceId", requireWorkspaceAccess);

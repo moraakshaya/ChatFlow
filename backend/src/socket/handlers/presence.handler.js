@@ -8,7 +8,24 @@ import { handleSocketError } from "../middleware/error.socket.js";
 import logger from "../../utils/logger.js";
 
 /**
- * Finds all active conversations for a user to broadcast presence changes.
+ * Returns the number of LIVE socket connections for a user.
+ *
+ * Socket.IO removes a socket from all rooms BEFORE firing the disconnect event,
+ * so io.sockets.adapter.rooms.get(`user_${userId}`)?.size is always accurate:
+ *   - On connect  → size >= 1 (this socket was just added)
+ *   - On disconnect → size = remaining live connections (this socket already gone)
+ *
+ * This is the authoritative source of truth, bypassing any stale data in
+ * Redis or the in-memory store.
+ */
+const getLiveSocketCount = (io, userId) => {
+    const room = io.sockets.adapter.rooms.get(`user_${userId}`);
+    return room ? room.size : 0;
+};
+
+/**
+ * Finds all unique co-members across every conversation the user belongs to,
+ * then emits the presence event to each co-member's personal `user_X` room.
  */
 const broadcastPresenceTransition = async (io, userId, eventType) => {
     try {
@@ -17,47 +34,76 @@ const broadcastPresenceTransition = async (io, userId, eventType) => {
             status: "active"
         });
 
-        for (const membership of memberships) {
-            const roomName = `conversation_${membership.conversationId.toString()}`;
-            io.to(roomName).emit(eventType, { userId });
-        }
+        if (!memberships.length) return;
+
+        const conversationIds = memberships.map(m => m.conversationId);
+
+        const sharedMembers = await ConversationMember.find({
+            conversationId: { $in: conversationIds },
+            userId: { $ne: mongoose.Types.ObjectId.createFromHexString(userId) },
+            status: "active"
+        });
+
+        const uniqueMemberIds = [...new Set(sharedMembers.map(m => m.userId.toString()))];
+
+        uniqueMemberIds.forEach(memberId => {
+            io.to(`user_${memberId}`).emit(eventType, { userId });
+        });
+
+        logger.info(
+            { event: "presence.broadcast", userId, eventType, recipients: uniqueMemberIds.length },
+            "[Presence] Broadcasted presence transition"
+        );
     } catch (err) {
         logger.error({ event: "presence.broadcast.error", error: err.message, userId, eventType }, "Error broadcasting presence transition");
     }
 };
 
 /**
- * Handles user connection and tracks multi-device presence.
- * Broadcasts presence:online only to relevant conversation rooms.
+ * Called on socket connect. Uses room size === 1 to detect the
+ * offline → online transition (only the FIRST tab/device counts).
  */
 export const handleConnect = async (io, socket) => {
     const userId = socket.user._id.toString();
 
-    const isNewOnline = await presenceService.registerSocket(userId, socket.id);
+    // Keep the store in sync (best-effort, used only for presence:get snapshots)
+    await presenceService.registerSocket(userId, socket.id);
 
-    if (isNewOnline) {
-        // User transitioned from OFFLINE to ONLINE
+    // Authoritative check: if this is the user's only socket → they just came online
+    const liveCount = getLiveSocketCount(io, userId);
+    logger.info({ userId, socketId: socket.id, liveCount }, "[Presence] Socket connected");
+
+    if (liveCount === 1) {
+        // Exactly one live socket means we just transitioned offline → online
         await broadcastPresenceTransition(io, userId, EVENTS.PRESENCE_ONLINE);
     }
 };
 
 /**
- * Handles user disconnection and updates presence.
- * Broadcasts presence:offline only to relevant conversation rooms.
+ * Called on socket disconnect. Uses room size === 0 (AFTER Socket.IO has
+ * already removed the socket from all rooms) to detect the online → offline
+ * transition. This is immune to stale store data or ghost sockets.
  */
 export const handleDisconnect = async (io, socket) => {
     const userId = socket.user._id.toString();
 
-    const isNowOffline = await presenceService.removeSocket(userId, socket.id);
+    // Keep the store in sync (best-effort)
+    await presenceService.removeSocket(userId, socket.id);
 
-    if (isNowOffline) {
-        // User transitioned from ONLINE to OFFLINE
+    // Authoritative check: Socket.IO removes the socket from rooms BEFORE this
+    // event fires. So if size === 0, the user truly has no live connections.
+    const liveCount = getLiveSocketCount(io, userId);
+    logger.info({ userId, socketId: socket.id, liveCount }, "[Presence] Socket disconnected");
+
+    if (liveCount === 0) {
         await broadcastPresenceTransition(io, userId, EVENTS.PRESENCE_OFFLINE);
     }
 };
 
 /**
- * Registers explicit presence requests like presence:get
+ * Handles presence:get requests — returns a snapshot of online/offline
+ * status for all members of the requested conversation.
+ * Uses Socket.IO room data (not the store) as the source of truth.
  */
 export const registerPresenceHandlers = (io, socket) => {
     const userId = socket.user._id.toString();
@@ -67,7 +113,7 @@ export const registerPresenceHandlers = (io, socket) => {
             const { conversationId } = payload;
             if (!conversationId) return;
 
-            // 1. Verify user membership in this conversation
+            // Verify membership
             const isMember = await ConversationMember.findOne({
                 conversationId: mongoose.Types.ObjectId.createFromHexString(conversationId),
                 userId: mongoose.Types.ObjectId.createFromHexString(userId),
@@ -79,27 +125,24 @@ export const registerPresenceHandlers = (io, socket) => {
                 return;
             }
 
-            // 2. Acknowledge successfully
             if (typeof callback === "function") {
                 callback({ success: true });
             }
 
-            // 3. Find all members of the conversation
+            // Get all conversation members
             const allMembers = await ConversationMember.find({
                 conversationId: mongoose.Types.ObjectId.createFromHexString(conversationId),
                 status: "active"
             });
 
-            const userIds = allMembers.map(m => m.userId.toString());
-
-            // 4. Get their presence states
-            const presenceStates = await presenceService.getUsersPresence(userIds);
-
-            // 5. Emit the snapshot back only to the requesting socket
-            socket.emit(EVENTS.PRESENCE_STATE, {
-                conversationId,
-                users: presenceStates
+            // Use Socket.IO room membership as the authoritative online check
+            const presenceStates = allMembers.map(m => {
+                const memberId = m.userId.toString();
+                const liveCount = getLiveSocketCount(io, memberId);
+                return { userId: memberId, status: liveCount > 0 ? "online" : "offline" };
             });
+
+            socket.emit(EVENTS.PRESENCE_STATE, { conversationId, users: presenceStates });
 
         } catch (err) {
             handleSocketError(socket, err, callback);

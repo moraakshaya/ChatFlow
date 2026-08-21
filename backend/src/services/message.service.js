@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Message from "../models/Message.js";
+import MessageReaction from "../models/MessageReaction.js";
 import Conversation from "../models/Conversation.js";
 import ConversationMember from "../models/ConversationMember.js";
 import realtimeService from "./realtime.service.js";
@@ -28,9 +29,11 @@ class MessageService {
         let message;
         try {
             message = await Message.create(messagePayload);
+            // Populate the senderId so we have the full user details
+            message = await Message.findById(message._id).populate("senderId", "fullName email avatar status");
         } catch (error) {
             if (error.code === 11000) {
-                return await Message.findOne({ senderId, clientMessageId });
+                return await Message.findOne({ senderId, clientMessageId }).populate("senderId", "fullName email avatar status");
             }
             throw error;
         }
@@ -57,7 +60,8 @@ class MessageService {
             });
         }
 
-        realtimeService.emitNewMessage(conversationId, message);
+        const plainMessage = message.toJSON();
+        realtimeService.emitNewMessage(conversationId, plainMessage);
 
         ConversationMember.find({
             conversationId,
@@ -111,6 +115,7 @@ class MessageService {
         const messages = await Message.find(query)
             .sort({ createdAt: -1, _id: -1 })
             .limit(actualLimit + 1)
+            .populate("senderId", "fullName email avatar status")
             .lean();
 
         let nextCursor = null;
@@ -133,37 +138,31 @@ class MessageService {
             return msg;
         });
 
+        const messageIds = sanitizedMessages.map(m => m._id);
+        const reactions = await MessageReaction.find({ messageId: { $in: messageIds } }).lean();
+
+        // Group reactions by messageId
+        const reactionsByMessageId = reactions.reduce((acc, reaction) => {
+            const mId = reaction.messageId.toString();
+            if (!acc[mId]) acc[mId] = [];
+            acc[mId].push(reaction);
+            return acc;
+        }, {});
+
+        // Attach reactions
+        const messagesWithReactions = sanitizedMessages.map(msg => ({
+            ...msg,
+            reactions: reactionsByMessageId[msg._id.toString()] || []
+        }));
+
         return {
-            messages: sanitizedMessages,
+            messages: messagesWithReactions,
             pagination: {
                 limit: actualLimit,
                 nextCursor,
                 hasMore: nextCursor !== null
             }
         };
-    }
-
-    async editMessage(messageId, userId, content) {
-        const message = await Message.findById(messageId);
-
-        if (!message) {
-            throw new AppError("Message not found", 404, ERROR_CODES.RESOURCE_NOT_FOUND);
-        }
-
-        if (message.senderId.toString() !== userId.toString()) {
-            throw new AppError("You can only edit your own messages", 403, ERROR_CODES.FORBIDDEN);
-        }
-
-        if (message.isDeleted) {
-            throw new AppError("Cannot edit a deleted message", 400, ERROR_CODES.VALIDATION_ERROR);
-        }
-
-        message.content = content;
-        message.isEdited = true;
-        message.editedAt = new Date();
-
-        await message.save();
-        return message;
     }
 
     async deleteMessage(messageId, userId) {
@@ -178,7 +177,7 @@ class MessageService {
         }
 
         if (message.isDeleted) {
-            throw new AppError("Message is already deleted", 400, ERROR_CODES.VALIDATION_ERROR);
+            return message;
         }
 
         message.isDeleted = true;
@@ -187,6 +186,9 @@ class MessageService {
         message.attachments = undefined;
 
         await message.save();
+
+        // Delete all reactions associated with this message
+        await MessageReaction.deleteMany({ messageId });
 
         const conversation = await Conversation.findOne({ _id: message.conversationId, lastMessageId: message._id });
         
@@ -214,6 +216,20 @@ class MessageService {
                 conversationId: message.conversationId
             });
         }
+
+        realtimeService.emitMessageDeleted(message.conversationId, message._id);
+
+        ConversationMember.find({
+            conversationId: message.conversationId,
+            status: "active",
+            userId: { $ne: userId }
+        }).then(members => {
+            members.forEach(member => {
+                unreadService.emitUnreadUpdate(message.conversationId, member.userId).catch(err => 
+                    logger.error({ event: "unread.broadcast.error", error: err.message }, "Failed to emit unread update on delete")
+                );
+            });
+        }).catch(err => logger.error({ event: "message.delete.members.error", error: err.message }, "Failed to fetch members for unread update"));
 
         return message;
     }

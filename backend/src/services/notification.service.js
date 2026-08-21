@@ -32,8 +32,13 @@ class NotificationService {
                 // Silently skip if user has disabled this notification type
                 return null;
             }
-            const notification = await Notification.create(data);
+            let notification = await Notification.create(data);
             
+            // Populate actor details for the real-time payload
+            if (notification.actor) {
+                notification = await notification.populate("actor", "fullName avatar email");
+            }
+
             // Deliver in real-time if possible, but don't fail if Socket.IO isn't available
             realtimeService.emitNewNotification(data.recipient.toString(), notification);
 
@@ -62,7 +67,7 @@ class NotificationService {
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(Number(limit))
-                .populate("actor", "name avatarUrl username"),
+                .populate("actor", "fullName avatar email"),
             Notification.countDocuments(query)
         ]);
 
@@ -84,7 +89,7 @@ class NotificationService {
         const notification = await Notification.findOne({
             _id: notificationId,
             recipient: userId
-        }).populate("actor", "name avatarUrl username");
+        }).populate("actor", "fullName avatar email");
         
         return notification;
     }

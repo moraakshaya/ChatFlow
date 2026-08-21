@@ -16,13 +16,20 @@ let io;
  * @param {import("http").Server} httpServer 
  */
 export const initializeSocket = (httpServer) => {
-    io = new Server(httpServer, {
+    const socketOptions = {
         cors: {
             origin: process.env.CLIENT_URL || "*", // Adjust CORS for production
             methods: ["GET", "POST"]
-        },
-        adapter: createAdapter(redisClient, subClient)
-    });
+        }
+    };
+
+    // Only use Redis adapter in production or if explicitly enabled,
+    // otherwise fallback to in-memory adapter for local dev without Redis.
+    if (process.env.NODE_ENV === "production" || process.env.USE_REDIS === "true") {
+        socketOptions.adapter = createAdapter(redisClient, subClient);
+    }
+
+    io = new Server(httpServer, socketOptions);
 
     // 1. Authentication Middleware
     io.use(verifySocketToken);
