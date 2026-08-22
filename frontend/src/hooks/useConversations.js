@@ -75,6 +75,51 @@ const useConversations = () => {
         };
     }, [socket]);
 
+    // Real-time: listen for conversation:updated (name/description/topic edits and unarchive)
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleConversationUpdated = ({ conversation }) => {
+            if (!conversation?._id) return;
+            setConversations(prev =>
+                prev.map(c =>
+                    c._id === conversation._id
+                        ? { ...c, ...conversation }
+                        : c
+                )
+            );
+        };
+
+        socket.on('conversation:updated', handleConversationUpdated);
+        return () => {
+            socket.off('conversation:updated', handleConversationUpdated);
+        };
+    }, [socket]);
+
+    // Real-time: listen for conversation:archived — mark it archived in local state
+    useEffect(() => {
+        if (!socket) return;
+        const handleArchived = ({ conversationId }) => {
+            if (!conversationId) return;
+            setConversations(prev =>
+                prev.map(c => c._id === conversationId ? { ...c, status: 'archived' } : c)
+            );
+        };
+        socket.on('conversation:archived', handleArchived);
+        return () => socket.off('conversation:archived', handleArchived);
+    }, [socket]);
+
+    // Real-time: listen for conversation:deleted — remove it from local state entirely
+    useEffect(() => {
+        if (!socket) return;
+        const handleDeleted = ({ conversationId }) => {
+            if (!conversationId) return;
+            setConversations(prev => prev.filter(c => c._id !== conversationId));
+        };
+        socket.on('conversation:deleted', handleDeleted);
+        return () => socket.off('conversation:deleted', handleDeleted);
+    }, [socket]);
+
     const markConversationAsRead = useCallback(async (conversationId) => {
         if (!conversationId) return;
         try {
@@ -87,14 +132,48 @@ const useConversations = () => {
         }
     }, []);
 
+    /** Optimistically patch a single conversation in the local list (used by ChannelSettingsModal). */
+    const updateConversationLocally = useCallback((updatedConv) => {
+        if (!updatedConv?._id) return;
+        setConversations(prev =>
+            prev.map(c =>
+                c._id === updatedConv._id ? { ...c, ...updatedConv } : c
+            )
+        );
+    }, []);
+
+    /** Optimistically mark a conversation as archived (moves it to the archived section). */
+    const archiveConversationLocally = useCallback((conversationId) => {
+        setConversations(prev =>
+            prev.map(c => c._id === conversationId ? { ...c, status: 'archived' } : c)
+        );
+    }, []);
+
+    /** Optimistically restore a conversation to active status. */
+    const unarchiveConversationLocally = useCallback((conversationId) => {
+        setConversations(prev =>
+            prev.map(c => c._id === conversationId ? { ...c, status: 'active' } : c)
+        );
+    }, []);
+
+    /** Optimistically remove a conversation from the local list (used after delete). */
+    const removeConversationLocally = useCallback((conversationId) => {
+        setConversations(prev => prev.filter(c => c._id !== conversationId));
+    }, []);
+
     return {
         conversations,
         unreadCounts,
         isLoading,
         error,
         refetch: fetchConversations,
-        markConversationAsRead
+        markConversationAsRead,
+        updateConversationLocally,
+        archiveConversationLocally,
+        unarchiveConversationLocally,
+        removeConversationLocally
     };
 };
 
 export default useConversations;
+

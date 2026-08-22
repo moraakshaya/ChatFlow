@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Users, UserPlus, Loader2, UserMinus } from 'lucide-react';
+import { X, Users, UserPlus, Loader2, UserMinus, Crown } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import ConfirmDialog from './ConfirmDialog';
 
 const ManageMembersModal = ({ isOpen, onClose, channel }) => {
     const { user: currentUser } = useAuth();
@@ -12,6 +13,17 @@ const ManageMembersModal = ({ isOpen, onClose, channel }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [actionLoadingId, setActionLoadingId] = useState(null);
+
+    // ConfirmDialog state for Transfer Ownership
+    const [confirmState, setConfirmState] = useState({
+        isOpen: false,
+        selectedUserId: null,
+        selectedUserName: '',
+    });
+
+    // Derive myRole from the fetched members
+    const myMembership = members.find(m => m.userId?._id === currentUser?._id);
+    const myRole = myMembership?.role || 'member';
 
     useEffect(() => {
         if (isOpen && channel) {
@@ -99,6 +111,40 @@ const ManageMembersModal = ({ isOpen, onClose, channel }) => {
         }
     };
 
+    const openTransferConfirm = (userId, userName) => {
+        setConfirmState({
+            isOpen: true,
+            selectedUserId: userId,
+            selectedUserName: userName,
+        });
+    };
+
+    const closeConfirm = () => {
+        setConfirmState({ isOpen: false, selectedUserId: null, selectedUserName: '' });
+    };
+
+    const handleConfirmTransfer = async () => {
+        const { selectedUserId } = confirmState;
+        if (!selectedUserId) return;
+
+        setActionLoadingId('transfer');
+        setError(null);
+        try {
+            const response = await api.patch(`/conversations/${channel._id}/transfer-ownership`, {
+                newOwnerId: selectedUserId
+            });
+            if (response.data.success) {
+                await fetchMembers(); // Refresh to reflect new roles
+                closeConfirm();
+            }
+        } catch (err) {
+            console.error("Failed to transfer ownership:", err);
+            setError(err.response?.data?.message || "Failed to transfer ownership.");
+        } finally {
+            setActionLoadingId(null);
+        }
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -170,18 +216,31 @@ const ManageMembersModal = ({ isOpen, onClose, channel }) => {
                                                 <p className="text-xs text-gray-500 capitalize">{member.role}</p>
                                             </div>
                                         </div>
-                                        
-                                        {/* Don't let users remove themselves or owners remove other owners easily without transfer */}
-                                        {member.userId?._id !== currentUser._id && (
-                                            <button
-                                                onClick={() => handleRemoveMember(member._id)}
-                                                disabled={actionLoadingId === member._id}
-                                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                                                title="Remove member"
-                                            >
-                                                {actionLoadingId === member._id ? <Loader2 size={16} className="animate-spin" /> : <UserMinus size={16} />}
-                                            </button>
-                                        )}
+                                        <div className="flex items-center gap-1">
+                                            {/* Transfer Ownership button (only if I am owner and target is not me) */}
+                                            {myRole === 'owner' && member.userId?._id !== currentUser._id && (
+                                                <button
+                                                    onClick={() => openTransferConfirm(member.userId._id, member.userId.fullName)}
+                                                    disabled={actionLoadingId === 'transfer'}
+                                                    className="p-1.5 text-gray-400 hover:text-amber-500 hover:bg-amber-50 rounded-md transition-colors"
+                                                    title="Transfer Ownership"
+                                                >
+                                                    <Crown size={16} />
+                                                </button>
+                                            )}
+
+                                            {/* Don't let users remove themselves or owners remove other owners easily without transfer */}
+                                            {member.userId?._id !== currentUser._id && (
+                                                <button
+                                                    onClick={() => handleRemoveMember(member._id)}
+                                                    disabled={actionLoadingId === member._id}
+                                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                                    title="Remove member"
+                                                >
+                                                    {actionLoadingId === member._id ? <Loader2 size={16} className="animate-spin" /> : <UserMinus size={16} />}
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 ))
                             )}
@@ -221,6 +280,17 @@ const ManageMembersModal = ({ isOpen, onClose, channel }) => {
                 </div>
                 
             </div>
+
+            <ConfirmDialog
+                isOpen={confirmState.isOpen}
+                title="Transfer Ownership"
+                message={<span>Are you sure you want to transfer ownership to <strong>{confirmState.selectedUserName}</strong>? You will become an admin and lose owner privileges.</span>}
+                confirmLabel="Transfer Ownership"
+                variant="warning"
+                isLoading={actionLoadingId === 'transfer'}
+                onConfirm={handleConfirmTransfer}
+                onCancel={closeConfirm}
+            />
         </div>
     );
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
-import { Send, Loader2, Trash2, CheckCheck, Check } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Send, Loader2, Trash2, CheckCheck, Archive } from 'lucide-react';
 import useMessages from '../hooks/useMessages';
 import useConversations from '../hooks/useConversations';
 import useTyping from '../hooks/useTyping';
@@ -12,10 +12,18 @@ import ChannelSettingsModal from './ChannelSettingsModal';
 
 const ChatWindow = () => {
     const { id: conversationId } = useParams();
+    const navigate = useNavigate();
     const { user } = useAuth();
     const { socket } = useSocket();
 
-    const { conversations, markConversationAsRead } = useConversations();
+    const {
+        conversations,
+        markConversationAsRead,
+        updateConversationLocally,
+        archiveConversationLocally,
+        unarchiveConversationLocally,
+        removeConversationLocally
+    } = useConversations();
     const activeChannel = conversations?.find(c => c._id === conversationId);
 
     const { messages, isLoading, sendMessage, deleteMessage, toggleReaction } = useMessages(conversationId);
@@ -305,45 +313,54 @@ const ChatWindow = () => {
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area */}
-            <div className="p-4 bg-white border-t border-gray-200">
-                <form
-                    onSubmit={handleSendMessage}
-                    className="flex items-end gap-2 bg-gray-50 border border-gray-300 rounded-lg p-2 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-shadow shadow-sm"
-                >
-                    <textarea
-                        value={newMessage}
-                        onChange={(e) => {
-                            setNewMessage(e.target.value);
-                            if (e.target.value.trim()) {
-                                onInputChange();
-                            } else {
-                                stopTyping();
-                            }
-                        }}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                                handleSendMessage(e);
-                            }
-                        }}
-                        placeholder={isDM ? `Message ${activeChannel.targetUser?.fullName || 'them'}` : `Message #${activeChannel.name}`}
-                        className="flex-1 max-h-32 bg-transparent border-none focus:outline-none focus:ring-0 resize-none py-2 px-2 text-gray-800 placeholder-gray-400"
-                        rows={1}
-                        style={{ minHeight: '40px' }}
-                    />
-                    <button
-                        type="submit"
-                        disabled={!newMessage.trim() || isSending}
-                        className="p-2.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:bg-gray-300 disabled:text-gray-500 transition-colors shrink-0 mb-0.5"
-                    >
-                        {isSending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-                    </button>
-                </form>
-                <div className="text-center mt-2 text-xs text-gray-400">
-                    <strong>Return</strong> to send <span className="mx-1">&bull;</span> <strong>Shift + Return</strong> to add a new line
+            {/* Input Area — hidden when channel is archived */}
+            {activeChannel.status === 'archived' ? (
+                <div className="p-4 bg-amber-50 border-t border-amber-200 flex items-center justify-center gap-2 text-amber-700">
+                    <Archive size={16} className="shrink-0" />
+                    <span className="text-sm font-medium">
+                        This channel is archived. Members cannot send new messages.
+                    </span>
                 </div>
-            </div>
+            ) : (
+                <div className="p-4 bg-white border-t border-gray-200">
+                    <form
+                        onSubmit={handleSendMessage}
+                        className="flex items-end gap-2 bg-gray-50 border border-gray-300 rounded-lg p-2 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-shadow shadow-sm"
+                    >
+                        <textarea
+                            value={newMessage}
+                            onChange={(e) => {
+                                setNewMessage(e.target.value);
+                                if (e.target.value.trim()) {
+                                    onInputChange();
+                                } else {
+                                    stopTyping();
+                                }
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSendMessage(e);
+                                }
+                            }}
+                            placeholder={isDM ? `Message ${activeChannel.targetUser?.fullName || 'them'}` : `Message #${activeChannel.name}`}
+                            className="flex-1 max-h-32 bg-transparent border-none focus:outline-none focus:ring-0 resize-none py-2 px-2 text-gray-800 placeholder-gray-400"
+                            rows={1}
+                            style={{ minHeight: '40px' }}
+                        />
+                        <button
+                            type="submit"
+                            disabled={!newMessage.trim() || isSending}
+                            className="p-2.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:bg-gray-300 disabled:text-gray-500 transition-colors shrink-0 mb-0.5"
+                        >
+                            {isSending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                        </button>
+                    </form>
+                    <div className="text-center mt-2 text-xs text-gray-400">
+                        <strong>Return</strong> to send <span className="mx-1">&bull;</span> <strong>Shift + Return</strong> to add a new line
+                    </div>
+                </div>
+            )}
 
             {/* Manage Members Modal */}
             <ManageMembersModal
@@ -357,6 +374,13 @@ const ChatWindow = () => {
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
                 channel={activeChannel}
+                onUpdate={updateConversationLocally}
+                onArchive={archiveConversationLocally}
+                onUnarchive={unarchiveConversationLocally}
+                onRemove={(id) => {
+                    removeConversationLocally(id);
+                    navigate('/');
+                }}
             />
         </div>
     );

@@ -40,6 +40,11 @@ const conversationSchema = new mongoose.Schema(
             trim: true,
             maxlength: 500,
         },
+        topic: {
+            type: String,
+            trim: true,
+            maxlength: 250,
+        },
         icon: {
             type: String,
         },

@@ -35,5 +35,10 @@ export default {
     NOTIFICATION_NEW: 'notification:new',
 
     // Unread Counters
-    UNREAD_UPDATE: 'unread:update'
+    UNREAD_UPDATE: 'unread:update',
+
+    // Conversation Updates
+    CONVERSATION_UPDATED: 'conversation:updated',
+    CONVERSATION_ARCHIVED: 'conversation:archived',
+    CONVERSATION_DELETED: 'conversation:deleted'
 };

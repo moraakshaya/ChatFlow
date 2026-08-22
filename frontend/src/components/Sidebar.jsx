@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { useSocket } from '../context/SocketContext';
 import useConversations from '../hooks/useConversations';
+import useMembership from '../hooks/useMembership';
 import usePresence from '../hooks/usePresence';
 import useNotifications from '../hooks/useNotifications';
 import CreateChannelModal from './CreateChannelModal';
@@ -11,9 +12,9 @@ import NewDMModal from './NewDMModal';
 import InviteMembersModal from './InviteMembersModal';
 import NotificationsPanel from './NotificationsPanel';
 import SettingsModal from './SettingsModal';
+import SidebarContextMenu from './SidebarContextMenu';
 import { 
     Hash, 
-    MessageSquare, 
     Settings, 
     LogOut,
     ChevronDown,
@@ -21,7 +22,10 @@ import {
     Search,
     Lock,
     UserPlus,
-    Bell
+    Bell,
+    Archive,
+    Pin,
+    BellOff
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -46,10 +50,45 @@ const Sidebar = () => {
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [isArchivedExpanded, setIsArchivedExpanded] = useState(false);
 
-    // Filter conversations by type
-    const channels = conversations.filter(c => c.type === 'channel' || c.type === 'private_channel' || c.type === 'group');
-    const directMessages = conversations.filter(c => c.type === 'private');
+    // Right-click context menu state
+    const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, conversationId: null });
+
+    // Membership data (isMuted, isPinned per conversation)
+    const { memberships, toggleMute, togglePin } = useMembership();
+
+    const handleContextMenu = useCallback((e, conversationId) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setContextMenu({ visible: true, x: e.pageX, y: e.pageY, conversationId });
+    }, []);
+
+    const closeContextMenu = useCallback(() => {
+        setContextMenu({ visible: false, x: 0, y: 0, conversationId: null });
+    }, []);
+
+    // Filter conversations by type and status
+    const allChannels = conversations.filter(c => c.type === 'channel' || c.type === 'private_channel' || c.type === 'group');
+
+    // Sort active channels: pinned first, then by name
+    const channels = allChannels
+        .filter(c => c.status !== 'archived')
+        .sort((a, b) => {
+            const aPinned = memberships[a._id]?.isPinned ? 1 : 0;
+            const bPinned = memberships[b._id]?.isPinned ? 1 : 0;
+            return bPinned - aPinned;
+        });
+    const archivedChannels = allChannels.filter(c => c.status === 'archived');
+
+    // Sort DMs: pinned first
+    const directMessages = conversations
+        .filter(c => c.type === 'private')
+        .sort((a, b) => {
+            const aPinned = memberships[a._id]?.isPinned ? 1 : 0;
+            const bPinned = memberships[b._id]?.isPinned ? 1 : 0;
+            return bPinned - aPinned;
+        });
 
     // Helper function to render the badge
     const renderBadge = (conversationId) => {
@@ -163,29 +202,81 @@ const Sidebar = () => {
                                 {channels.length === 0 ? (
                                     <li className="px-2 py-1 text-xs text-gray-500 italic">No channels yet</li>
                                 ) : (
-                                    channels.map(channel => (
-                                        <li key={channel._id}>
-                                            <NavLink
-                                                to={`/channel/${channel._id}`}
-                                                className={({ isActive }) =>
-                                                    `flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors ${
-                                                        isActive ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800'
-                                                    }`
-                                                }
-                                            >
-                                                {channel.type === 'private_channel' ? (
-                                                    <Lock size={14} className="text-gray-500" />
-                                                ) : (
-                                                    <Hash size={16} className="text-gray-500" />
-                                                )}
-                                                <span className="truncate text-sm">{channel.name}</span>
-                                                {renderBadge(channel._id)}
-                                            </NavLink>
-                                        </li>
-                                    ))
+                                    channels.map(channel => {
+                                        const mship = memberships[channel._id];
+                                        const isPinned = mship?.isPinned ?? false;
+                                        const isMuted = mship?.isMuted ?? false;
+                                        return (
+                                            <li key={channel._id}>
+                                                <NavLink
+                                                    to={`/channel/${channel._id}`}
+                                                    onContextMenu={(e) => handleContextMenu(e, channel._id)}
+                                                    className={({ isActive }) =>
+                                                        `flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors ${
+                                                            isActive ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800'
+                                                        } ${isPinned ? 'border-l-2 border-indigo-500 pl-1.5' : ''}`
+                                                    }
+                                                >
+                                                    {channel.type === 'private_channel' ? (
+                                                        <Lock size={14} className="text-gray-500 shrink-0" />
+                                                    ) : (
+                                                        <Hash size={16} className="text-gray-500 shrink-0" />
+                                                    )}
+                                                    <span className={`truncate text-sm flex-1 ${isMuted ? 'opacity-60' : ''}`}>
+                                                        {channel.name}
+                                                    </span>
+                                                    <span className="flex items-center gap-1 shrink-0">
+                                                        {isPinned && <Pin size={11} className="text-indigo-400" />}
+                                                        {isMuted && <BellOff size={11} className="text-gray-500" />}
+                                                        {renderBadge(channel._id)}
+                                                    </span>
+                                                </NavLink>
+                                            </li>
+                                        );
+                                    })
                                 )}
                             </ul>
                         </div>
+
+                        {/* Archived Channels Section — collapsible, hidden by default */}
+                        {archivedChannels.length > 0 && (
+                            <div>
+                                <button
+                                    className="flex items-center justify-between w-full px-2 mb-1 text-gray-500 hover:text-gray-400 transition-colors group"
+                                    onClick={() => setIsArchivedExpanded(prev => !prev)}
+                                >
+                                    <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider">
+                                        <Archive size={12} />
+                                        Archived
+                                        <span className="text-[10px] font-normal bg-gray-800 px-1.5 py-0.5 rounded-full">{archivedChannels.length}</span>
+                                    </span>
+                                    <ChevronDown
+                                        size={12}
+                                        className={`transition-transform ${isArchivedExpanded ? 'rotate-180' : ''}`}
+                                    />
+                                </button>
+
+                                {isArchivedExpanded && (
+                                    <ul className="space-y-0.5">
+                                        {archivedChannels.map(channel => (
+                                            <li key={channel._id}>
+                                                <NavLink
+                                                    to={`/channel/${channel._id}`}
+                                                    className={({ isActive }) =>
+                                                        `flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors opacity-60 italic ${
+                                                            isActive ? 'bg-gray-800 text-white opacity-100' : 'text-gray-400 hover:bg-gray-800 hover:opacity-80'
+                                                        }`
+                                                    }
+                                                >
+                                                    <Archive size={14} className="text-gray-600 shrink-0" />
+                                                    <span className="truncate text-sm">{channel.name}</span>
+                                                </NavLink>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        )}
 
                         {/* Direct Messages Section */}
                         <div>
@@ -207,15 +298,19 @@ const Sidebar = () => {
                                         const dmName = targetUser?.fullName || "Unknown User";
                                         const initial = dmName.charAt(0).toUpperCase();
                                         const online = isOnline(targetUser?._id);
+                                        const mship = memberships[dm._id];
+                                        const isPinned = mship?.isPinned ?? false;
+                                        const isMuted = mship?.isMuted ?? false;
                                         
                                         return (
                                             <li key={dm._id}>
                                                 <NavLink
                                                     to={`/channel/${dm._id}`}
+                                                    onContextMenu={(e) => handleContextMenu(e, dm._id)}
                                                     className={({ isActive }) =>
                                                         `flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors ${
                                                             isActive ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800'
-                                                        }`
+                                                        } ${isPinned ? 'border-l-2 border-indigo-500 pl-1.5' : ''}`
                                                     }
                                                 >
                                                     <div className="relative flex-shrink-0">
@@ -223,7 +318,7 @@ const Sidebar = () => {
                                                             {initial}
                                                         </div>
                                                         {/* Presence dot */}
-                                                        <span className={`absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5`}>
+                                                        <span className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5">
                                                             {online && (
                                                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-60" />
                                                             )}
@@ -232,8 +327,12 @@ const Sidebar = () => {
                                                             }`} />
                                                         </span>
                                                     </div>
-                                                    <span className="truncate text-sm">{dmName}</span>
-                                                    {renderBadge(dm._id)}
+                                                    <span className={`truncate text-sm flex-1 ${isMuted ? 'opacity-60' : ''}`}>{dmName}</span>
+                                                    <span className="flex items-center gap-1 shrink-0">
+                                                        {isPinned && <Pin size={11} className="text-indigo-400" />}
+                                                        {isMuted && <BellOff size={11} className="text-gray-500" />}
+                                                        {renderBadge(dm._id)}
+                                                    </span>
                                                 </NavLink>
                                             </li>
                                         );
@@ -321,6 +420,19 @@ const Sidebar = () => {
             <SettingsModal
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
+            />
+
+            {/* Right-click context menu */}
+            <SidebarContextMenu
+                visible={contextMenu.visible}
+                x={contextMenu.x}
+                y={contextMenu.y}
+                conversationId={contextMenu.conversationId}
+                isMuted={memberships[contextMenu.conversationId]?.isMuted ?? false}
+                isPinned={memberships[contextMenu.conversationId]?.isPinned ?? false}
+                onPin={togglePin}
+                onMute={toggleMute}
+                onClose={closeContextMenu}
             />
         </>
     );

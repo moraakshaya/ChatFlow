@@ -114,9 +114,14 @@ export const updateConversation = asyncHandler(async (req, res) => {
     const updates = {};
     if (req.body.name !== undefined) updates.name = req.body.name;
     if (req.body.description !== undefined) updates.description = req.body.description;
+    if (req.body.topic !== undefined) updates.topic = req.body.topic;
     if (req.body.icon !== undefined) updates.icon = req.body.icon;
 
     const conversation = await conversationService.updateConversation(req.params.id, req.user.organizationId, updates);
+
+    // Broadcast the update to all members currently in the room
+    const realtimeService = (await import("../services/realtime.service.js")).default;
+    realtimeService.emitConversationUpdated(req.params.id, conversation);
 
     res.status(200).json({
         success: true,
@@ -131,6 +136,10 @@ export const updateConversation = asyncHandler(async (req, res) => {
 export const archiveConversation = asyncHandler(async (req, res) => {
     await conversationService.archiveConversation(req.params.id, req.user.organizationId);
 
+    // Notify all members in real time
+    const realtimeService = (await import("../services/realtime.service.js")).default;
+    realtimeService.emitConversationArchived(req.params.id);
+
     res.status(200).json({
         success: true,
         message: "Conversation archived successfully"
@@ -141,7 +150,11 @@ export const archiveConversation = asyncHandler(async (req, res) => {
 // @route   PATCH /api/conversations/:id/unarchive
 // @access  Private
 export const unarchiveConversation = asyncHandler(async (req, res) => {
-    await conversationService.unarchiveConversation(req.params.id, req.user.organizationId);
+    const conversation = await conversationService.unarchiveConversation(req.params.id, req.user.organizationId);
+
+    // Reuse conversation:updated so the frontend restores it in the active list
+    const realtimeService = (await import("../services/realtime.service.js")).default;
+    realtimeService.emitConversationUpdated(req.params.id, conversation);
 
     res.status(200).json({
         success: true,
@@ -154,6 +167,10 @@ export const unarchiveConversation = asyncHandler(async (req, res) => {
 // @access  Private
 export const deleteConversation = asyncHandler(async (req, res) => {
     await conversationService.deleteConversation(req.params.id, req.user.organizationId);
+
+    // Notify all members before the room disappears
+    const realtimeService = (await import("../services/realtime.service.js")).default;
+    realtimeService.emitConversationDeleted(req.params.id);
 
     res.status(200).json({
         success: true,

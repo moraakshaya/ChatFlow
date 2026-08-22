@@ -25,7 +25,7 @@ const ChannelHeader = ({ channel, onManageMembers, onOpenSettings, typingText })
                         {isPrivate ? dmName : channel.name}
                     </h2>
 
-                    {/* Animated subtitle: typing takes priority over description */}
+                    {/* Animated subtitle: typing takes priority, then topic, then description */}
                     {typingText ? (
                         <span className="flex items-center gap-1 text-xs text-blue-500 font-medium">
                             <span className="typing-dots text-blue-400">
@@ -33,6 +33,8 @@ const ChannelHeader = ({ channel, onManageMembers, onOpenSettings, typingText })
                             </span>
                             <span className="italic">{typingText}</span>
                         </span>
+                    ) : channel.topic && !isPrivate ? (
+                        <p className="text-xs text-indigo-400 truncate max-w-sm font-medium">{channel.topic}</p>
                     ) : channel.description && !isPrivate ? (
                         <p className="text-xs text-gray-400 truncate max-w-sm">{channel.description}</p>
                     ) : null}
