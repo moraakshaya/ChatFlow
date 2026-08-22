@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useWorkspace } from '../context/WorkspaceContext';
@@ -13,6 +13,10 @@ import InviteMembersModal from './InviteMembersModal';
 import NotificationsPanel from './NotificationsPanel';
 import SettingsModal from './SettingsModal';
 import SidebarContextMenu from './SidebarContextMenu';
+import GlobalSearchModal from './GlobalSearchModal';
+import CreateProjectModal from './CreateProjectModal';
+import CreateWorkspaceModal from './CreateWorkspaceModal';
+import ManageProjectWorkspaceModal from './ManageProjectWorkspaceModal';
 import { 
     Hash, 
     Settings, 
@@ -25,12 +29,15 @@ import {
     Bell,
     Archive,
     Pin,
-    BellOff
+    BellOff,
+    FolderPlus,
+    Briefcase
 } from 'lucide-react';
 
 const Sidebar = () => {
     const { user, logout } = useAuth();
-    const { workspaces, activeWorkspace, switchWorkspace, activeProject } = useWorkspace();
+    const isAdminOrOwner = user?.role === 'admin' || user?.role === 'owner';
+    const { workspaces, activeWorkspace, switchWorkspace, activeProject, projects, switchProject } = useWorkspace();
     const { socket } = useSocket();
     const { conversations, unreadCounts, isLoading, error, refetch } = useConversations();
     const { isOnline } = usePresence(socket, conversations);
@@ -51,6 +58,22 @@ const Sidebar = () => {
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isArchivedExpanded, setIsArchivedExpanded] = useState(false);
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+    const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
+    const [isCreateWorkspaceOpen, setIsCreateWorkspaceOpen] = useState(false);
+    const [isManageModalOpen, setIsManageModalOpen] = useState(false);
+
+    // Keyboard shortcut for search
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                setIsSearchModalOpen(true);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     // Right-click context menu state
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, conversationId: null });
@@ -118,10 +141,11 @@ const Sidebar = () => {
                 </div>
 
                 {/* Workspace Dropdown */}
-                {isDropdownOpen && workspaces.length > 0 && (
-                    <div className="absolute top-16 left-2 right-2 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50 overflow-hidden py-1">
-                        <div className="px-3 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                            Switch Workspace
+                {isDropdownOpen && (
+                    <div className="absolute top-16 left-2 right-2 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50 overflow-hidden py-1 max-h-[70vh] overflow-y-auto">
+                        <div className="px-3 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider flex justify-between items-center">
+                            Workspaces
+                            {isAdminOrOwner && <button onClick={() => {setIsCreateWorkspaceOpen(true); setIsDropdownOpen(false);}} className="hover:text-white"><Plus size={14} /></button>}
                         </div>
                         {workspaces.map(ws => (
                             <button
@@ -136,30 +160,70 @@ const Sidebar = () => {
                                 <span className="truncate">{ws.name}</span>
                             </button>
                         ))}
+                        
                         <div className="border-t border-gray-700 my-1"></div>
-                        <button
-                            className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gray-700 transition-colors flex items-center gap-2"
-                            onClick={() => {
-                                setIsInviteModalOpen(true);
-                                setIsDropdownOpen(false);
-                            }}
-                        >
-                            <UserPlus size={14} className="text-gray-400" />
-                            <span>Invite Teammates</span>
-                        </button>
+                        
+                        <div className="px-3 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider flex justify-between items-center">
+                            Projects
+                            {isAdminOrOwner && <button onClick={() => {setIsCreateProjectOpen(true); setIsDropdownOpen(false);}} className="hover:text-white"><Plus size={14} /></button>}
+                        </div>
+                        {projects?.map(p => (
+                            <button
+                                key={p._id}
+                                className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-700 transition-colors flex items-center gap-2 ${activeProject?._id === p._id ? 'text-indigo-400 font-medium' : 'text-gray-200'}`}
+                                onClick={() => {
+                                    switchProject(p);
+                                    setIsDropdownOpen(false);
+                                }}
+                            >
+                                <FolderPlus size={14} className={activeProject?._id === p._id ? 'text-indigo-400' : 'text-gray-400'} />
+                                <span className="truncate">{p.name}</span>
+                            </button>
+                        ))}
+
+                        <div className="border-t border-gray-700 my-1"></div>
+                        
+                        {activeProject && isAdminOrOwner && (
+                            <button
+                                className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gray-700 transition-colors flex items-center gap-2"
+                                onClick={() => {
+                                    setIsManageModalOpen(true);
+                                    setIsDropdownOpen(false);
+                                }}
+                            >
+                                <Settings size={14} className="text-gray-400" />
+                                <span>Manage Project</span>
+                            </button>
+                        )}
+
+                        {isAdminOrOwner && (
+                            <button
+                                className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gray-700 transition-colors flex items-center gap-2"
+                                onClick={() => {
+                                    setIsInviteModalOpen(true);
+                                    setIsDropdownOpen(false);
+                                }}
+                            >
+                                <UserPlus size={14} className="text-gray-400" />
+                                <span>Invite Teammates</span>
+                            </button>
+                        )}
                     </div>
                 )}
 
                 {/* Global Search */}
                 <div className="p-4">
-                    <div className="relative">
-                        <Search size={16} className="absolute left-3 top-2.5 text-gray-500" />
-                        <input 
-                            type="text" 
-                            placeholder="Search..." 
-                            className="w-full bg-gray-800 text-sm text-white rounded-md pl-9 pr-3 py-2 outline-none focus:ring-1 focus:ring-blue-500 border border-transparent transition-all placeholder-gray-500"
-                        />
-                    </div>
+                    <button 
+                        onClick={() => setIsSearchModalOpen(true)}
+                        className="w-full relative flex items-center bg-gray-800 hover:bg-gray-700 text-sm text-gray-400 rounded-md pl-3 pr-2 py-2 border border-transparent transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 group"
+                    >
+                        <Search size={16} className="text-gray-500 group-hover:text-gray-400 mr-2 shrink-0" />
+                        <span className="truncate">Search...</span>
+                        <div className="ml-auto flex gap-1">
+                            <kbd className="hidden sm:inline-block font-sans text-[10px] bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-gray-500">⌘</kbd>
+                            <kbd className="hidden sm:inline-block font-sans text-[10px] bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-gray-500">K</kbd>
+                        </div>
+                    </button>
                 </div>
 
                 {/* Loading / Error States */}
@@ -433,6 +497,24 @@ const Sidebar = () => {
                 onPin={togglePin}
                 onMute={toggleMute}
                 onClose={closeContextMenu}
+            />
+
+            <GlobalSearchModal
+                isOpen={isSearchModalOpen}
+                onClose={() => setIsSearchModalOpen(false)}
+            />
+
+            <CreateProjectModal 
+                isOpen={isCreateProjectOpen} 
+                onClose={() => setIsCreateProjectOpen(false)} 
+            />
+            <CreateWorkspaceModal 
+                isOpen={isCreateWorkspaceOpen} 
+                onClose={() => setIsCreateWorkspaceOpen(false)} 
+            />
+            <ManageProjectWorkspaceModal 
+                isOpen={isManageModalOpen} 
+                onClose={() => setIsManageModalOpen(false)} 
             />
         </>
     );

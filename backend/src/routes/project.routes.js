@@ -7,7 +7,7 @@ import {
     updateProject,
     deleteProject
 } from "../controllers/project.controller.js";
-import { protect } from "../middleware/auth.middleware.js";
+import { protect, requireAdmin } from "../middleware/auth.middleware.js";
 import { validate } from "../middleware/validate.js";
 import { generalRateLimiter } from "../middleware/rateLimit.middleware.js";
 import { validateParamId } from "../validators/common.validator.js";
@@ -21,7 +21,7 @@ router.use(protect);
 router.use(generalRateLimiter);
 
 router.route("/")
-    .post(validate(createProjectValidator), createProject)
+    .post(requireAdmin, validate(createProjectValidator), createProject)
     .get(getAllProjects);
 
 router.route("/organization/:organizationId")
@@ -31,7 +31,7 @@ router.route("/organization/:organizationId")
 router.use("/:id", requireProjectAccess);
 router.route("/:id")
     .get(validate([validateParamId()]), getProjectById)
-    .patch(validate([validateParamId(), ...updateProjectValidator]), updateProject)
-    .delete(validate([validateParamId()]), deleteProject);
+    .patch(requireAdmin, validate([validateParamId(), ...updateProjectValidator]), updateProject)
+    .delete(requireAdmin, validate([validateParamId()]), deleteProject);
 
 export default router;

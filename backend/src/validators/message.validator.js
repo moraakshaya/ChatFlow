@@ -4,7 +4,10 @@ export const createMessageValidator = [
     body("conversationId")
         .notEmpty().withMessage("Conversation ID is required")
         .isMongoId().withMessage("Invalid Conversation ID format"),
+    body("type")
+        .isIn(["text", "attachment", "system"]).withMessage("Invalid message type"),
     body("content")
+        .if(body("type").equals("text"))
         .trim()
         .notEmpty().withMessage("Message content is required")
         .isString().withMessage("Message content must be a string")

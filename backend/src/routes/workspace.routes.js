@@ -1,5 +1,5 @@
 import express from "express";
-import { protect } from "../middleware/auth.middleware.js";
+import { protect, requireAdmin } from "../middleware/auth.middleware.js";
 import { validate } from "../middleware/validate.js";
 import { generalRateLimiter } from "../middleware/rateLimit.middleware.js";
 import { validateParamId } from "../validators/common.validator.js";
@@ -21,7 +21,7 @@ router.use(protect);
 router.use(generalRateLimiter);
 
 router.route("/")
-    .post(validate(createWorkspaceValidator), createWorkspace)
+    .post(requireAdmin, validate(createWorkspaceValidator), createWorkspace)
     .get(getAllWorkspaces); // Typically should also be scoped, but handled in controller or removed if not used globally.
 
 // Apply requireProjectAccess for project specific routes
@@ -33,7 +33,7 @@ router.route("/project/:projectId")
 router.use("/:id", requireWorkspaceAccess);
 router.route("/:id")
     .get(validate([validateParamId()]), getWorkspaceById)
-    .patch(validate([validateParamId(), ...updateWorkspaceValidator]), updateWorkspace)
-    .delete(validate([validateParamId()]), deleteWorkspace);
+    .patch(requireAdmin, validate([validateParamId(), ...updateWorkspaceValidator]), updateWorkspace)
+    .delete(requireAdmin, validate([validateParamId()]), deleteWorkspace);
 
 export default router;

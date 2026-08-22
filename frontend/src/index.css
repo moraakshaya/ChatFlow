@@ -40,3 +40,42 @@ input::-ms-reveal,
 input::-ms-clear {
   display: none;
 }
+
+/* ── WhatsApp-style Dark Scrollbar ───────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 14px;
+}
+
+::-webkit-scrollbar-track {
+  background: #111b21; /* WhatsApp dark background */
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #374045; /* Gray pill */
+  border-radius: 10px;
+  border: 3px solid #111b21; /* Creates padding effect */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #4a5459;
+}
+
+/* Scrollbar Buttons (Arrows) */
+::-webkit-scrollbar-button:single-button {
+  display: block;
+  background-color: #111b21;
+  background-size: 8px;
+  background-repeat: no-repeat;
+  background-position: center;
+  height: 16px;
+}
+
+/* Up arrow */
+::-webkit-scrollbar-button:single-button:vertical:decrement {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'><path d='M5 0 L10 10 L0 10 Z' fill='%23667781'/></svg>");
+}
+
+/* Down arrow */
+::-webkit-scrollbar-button:single-button:vertical:increment {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'><path d='M0 0 L10 0 L5 10 Z' fill='%23667781'/></svg>");
+}

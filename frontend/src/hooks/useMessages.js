@@ -7,6 +7,9 @@ const useMessages = (conversationId) => {
     const [messages, setMessages] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [nextCursor, setNextCursor] = useState(null);
+    const [hasMore, setHasMore] = useState(false);
+    const [isFetchingMore, setIsFetchingMore] = useState(false);
     const { socket } = useSocket();
     const { user } = useAuth();
     
@@ -28,6 +31,8 @@ const useMessages = (conversationId) => {
                 // Assuming the API returns latest messages first (descending), we reverse them
                 // so they appear chronologically top-to-bottom in the chat window.
                 setMessages(response.data.data.reverse());
+                setNextCursor(response.data.pagination?.nextCursor || null);
+                setHasMore(response.data.pagination?.hasMore || false);
             }
         } catch (err) {
             console.error("Failed to fetch messages:", err);
@@ -36,6 +41,25 @@ const useMessages = (conversationId) => {
             setIsLoading(false);
         }
     }, [conversationId]);
+
+    const fetchMoreMessages = useCallback(async () => {
+        if (!conversationId || !hasMore || isFetchingMore || !nextCursor) return;
+        
+        setIsFetchingMore(true);
+        try {
+            const response = await api.get(`/messages/conversation/${conversationId}?cursor=${encodeURIComponent(nextCursor)}`);
+            if (response.data.success) {
+                const newMessages = response.data.data.reverse();
+                setMessages(prev => [...newMessages, ...prev]);
+                setNextCursor(response.data.pagination?.nextCursor || null);
+                setHasMore(response.data.pagination?.hasMore || false);
+            }
+        } catch (err) {
+            console.error("Failed to fetch more messages:", err);
+        } finally {
+            setIsFetchingMore(false);
+        }
+    }, [conversationId, hasMore, isFetchingMore, nextCursor]);
 
     useEffect(() => {
         fetchMessages();
@@ -164,9 +188,80 @@ const useMessages = (conversationId) => {
             }
         } catch (err) {
             console.error("Failed to send message:", err);
+            let errMsg = err.response?.data?.error?.message || err.response?.data?.message || 'Failed to send message';
+            if (err.response?.data?.error?.details && Array.isArray(err.response.data.error.details)) {
+                errMsg += ': ' + err.response.data.error.details.map(d => d.message).join(', ');
+            }
             return { 
                 success: false, 
-                message: err.response?.data?.message || 'Failed to send message' 
+                message: errMsg 
+            };
+        }
+    };
+
+    const sendAttachment = async (file) => {
+        if (!file || !conversationId) return { success: false, message: 'No file provided' };
+        
+        try {
+            // 1. Init upload
+            const initResponse = await api.post('/attachments/upload/init', {
+                fileName: file.name,
+                mimeType: file.type || 'application/octet-stream',
+                fileSize: file.size,
+                conversationId
+            });
+            
+            if (!initResponse.data.success) {
+                return { success: false, message: 'Failed to initialize upload' };
+            }
+            
+            const { attachmentId } = initResponse.data.data;
+            
+            // 2. Upload file (Mock step - we simulate network delay)
+            await new Promise(resolve => setTimeout(resolve, 800));
+            
+            // 3. Complete upload
+            const completeResponse = await api.post(`/attachments/${attachmentId}/complete`);
+            
+            if (!completeResponse.data.success) {
+                return { success: false, message: 'Failed to complete upload' };
+            }
+            
+            // 4. Send Message with Attachment
+            const response = await api.post('/messages', {
+                conversationId,
+                type: 'attachment',
+                clientMessageId: crypto.randomUUID(),
+                attachments: [{
+                    url: attachmentId, // We use attachmentId here for the mock URL reference
+                    filename: file.name,
+                    mimeType: file.type || 'application/octet-stream',
+                    sizeBytes: file.size
+                }]
+            });
+            
+            if (response.data.success) {
+                const newMsg = response.data.data;
+                setMessages(prev => {
+                    const exists = prev.some(msg => 
+                        msg._id === newMsg._id || 
+                        (msg.clientMessageId && msg.clientMessageId === newMsg.clientMessageId)
+                    );
+                    if (exists) return prev;
+                    return [...prev, newMsg];
+                });
+                return { success: true, message: newMsg };
+            }
+            
+        } catch (err) {
+            console.error("Failed to send attachment:", err);
+            let errMsg = err.response?.data?.error?.message || err.response?.data?.message || 'Failed to send attachment';
+            if (err.response?.data?.error?.details && Array.isArray(err.response.data.error.details)) {
+                errMsg += ': ' + err.response.data.error.details.map(d => d.message).join(', ');
+            }
+            return { 
+                success: false, 
+                message: errMsg 
             };
         }
     };
@@ -233,7 +328,11 @@ const useMessages = (conversationId) => {
         messages,
         isLoading,
         error,
+        hasMore,
+        isFetchingMore,
+        fetchMoreMessages,
         sendMessage,
+        sendAttachment,
         deleteMessage,
         toggleReaction,
         refreshMessages: fetchMessages

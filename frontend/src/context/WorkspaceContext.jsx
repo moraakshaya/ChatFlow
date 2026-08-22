@@ -84,6 +84,45 @@ export const WorkspaceProvider = ({ children }) => {
         setActiveWorkspace(workspace);
     };
 
+    const updateProject = async (id, data) => {
+        const res = await api.patch(`/projects/${id}`, data);
+        if (res.data.success) {
+            await fetchHierarchy();
+        }
+        return res.data;
+    };
+
+    const deleteProject = async (id) => {
+        const res = await api.delete(`/projects/${id}`);
+        if (res.data.success) {
+            if (activeProject?._id === id) {
+                setActiveProject(null);
+                setActiveWorkspace(null);
+            }
+            await fetchHierarchy();
+        }
+        return res.data;
+    };
+
+    const updateWorkspace = async (id, data) => {
+        const res = await api.patch(`/workspaces/${id}`, data);
+        if (res.data.success) {
+            await fetchHierarchy();
+        }
+        return res.data;
+    };
+
+    const deleteWorkspace = async (id) => {
+        const res = await api.delete(`/workspaces/${id}`);
+        if (res.data.success) {
+            if (activeWorkspace?._id === id) {
+                setActiveWorkspace(null);
+            }
+            await fetchHierarchy();
+        }
+        return res.data;
+    };
+
     return (
         <WorkspaceContext.Provider value={{
             projects,
@@ -93,7 +132,11 @@ export const WorkspaceProvider = ({ children }) => {
             isLoading,
             switchProject,
             switchWorkspace,
-            refreshHierarchy: fetchHierarchy
+            refreshHierarchy: fetchHierarchy,
+            updateProject,
+            deleteProject,
+            updateWorkspace,
+            deleteWorkspace
         }}>
             {children}
         </WorkspaceContext.Provider>

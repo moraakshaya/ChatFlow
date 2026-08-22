@@ -34,3 +34,10 @@ export const protect = async (req, res, next) => {
         return next(new AppError("Not authorized, no token provided", 401, ERROR_CODES.AUTH_REQUIRED));
     }
 };
+
+export const requireAdmin = (req, res, next) => {
+    if (req.user && (req.user.role === "admin" || req.user.role === "owner")) {
+        return next();
+    }
+    return next(new AppError("Not authorized, requires admin privileges", 403, ERROR_CODES.FORBIDDEN));
+};
