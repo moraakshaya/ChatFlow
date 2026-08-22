@@ -22,7 +22,8 @@ import messageSearchRoutes from "./routes/messageSearch.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import unreadRoutes from "./routes/unread.routes.js";
 import notificationPreferenceRoutes from "./routes/notificationPreference.routes.js";
-
+import apiKeyRoutes from "./routes/apiKey.routes.js";
+import webhookRoutes from "./routes/webhook.routes.js";
 
 // Mount Routes
 app.use("/api/auth", authRoutes);
@@ -44,6 +45,8 @@ app.use("/api/read-receipts", readReceiptRoutes);
 app.use("/api/attachments", attachmentRoutes);
 app.use("/api/search", messageSearchRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/projects/:projectId/api-keys", apiKeyRoutes);
+app.use("/api/projects/:projectId/webhooks", webhookRoutes);
 
 const PORT = process.env.PORT || 5000;
 

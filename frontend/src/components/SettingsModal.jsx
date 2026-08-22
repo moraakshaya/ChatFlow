@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, User as UserIcon, Lock, Bell, Check, Loader2, Eye, EyeOff } from 'lucide-react';
+import { X, User as UserIcon, Lock, Bell, Check, Loader2, Eye, EyeOff, Building, Terminal, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import OrganizationSettingsTab from './OrganizationSettingsTab';
+import DeveloperSettingsTab from './DeveloperSettingsTab';
 
 const SettingsModal = ({ isOpen, onClose }) => {
     const { user, updateUser } = useAuth();
@@ -181,6 +183,36 @@ const SettingsModal = ({ isOpen, onClose }) => {
                         <Lock size={18} />
                         Security
                     </button>
+
+                    {(user?.role === 'admin' || user?.role === 'owner') && (
+                        <>
+                            <div className="h-px bg-gray-800 my-2 mx-2"></div>
+                            
+                            <button 
+                                onClick={() => setActiveTab('organization')}
+                                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                                    activeTab === 'organization' 
+                                    ? 'bg-blue-600/10 text-blue-400' 
+                                    : 'text-gray-400 hover:bg-gray-900 hover:text-gray-200'
+                                }`}
+                            >
+                                <Building size={18} />
+                                Organization
+                            </button>
+
+                            <button 
+                                onClick={() => setActiveTab('developer')}
+                                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                                    activeTab === 'developer' 
+                                    ? 'bg-blue-600/10 text-blue-400' 
+                                    : 'text-gray-400 hover:bg-gray-900 hover:text-gray-200'
+                                }`}
+                            >
+                                <Terminal size={18} />
+                                Developer
+                            </button>
+                        </>
+                    )}
                 </div>
 
                 {/* Main Content Area */}
@@ -385,7 +417,43 @@ const SettingsModal = ({ isOpen, onClose }) => {
                                         </button>
                                     </div>
                                 </form>
+
+                                <div className="mt-12 pt-6 border-t border-gray-800">
+                                    <h4 className="text-sm font-bold text-red-400 mb-2">Danger Zone</h4>
+                                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center justify-between">
+                                        <div>
+                                            <div className="font-medium text-gray-200">Session Management</div>
+                                            <div className="text-xs text-gray-500 mt-1">Log out of all other active sessions across devices.</div>
+                                        </div>
+                                        <button 
+                                            onClick={async () => {
+                                                if (window.confirm("Are you sure you want to log out all other sessions?")) {
+                                                    try {
+                                                        await api.post('/auth/logout-all');
+                                                        setSecurityMessage({ type: 'success', text: 'All other sessions have been logged out.' });
+                                                    } catch (error) {
+                                                        setSecurityMessage({ type: 'error', text: 'Failed to logout sessions.' });
+                                                    }
+                                                }
+                                            }}
+                                            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                                        >
+                                            <LogOut size={16} />
+                                            Logout All Sessions
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
+                        )}
+
+                        {/* Organization Tab */}
+                        {activeTab === 'organization' && (user?.role === 'admin' || user?.role === 'owner') && (
+                            <OrganizationSettingsTab />
+                        )}
+
+                        {/* Developer Tab */}
+                        {activeTab === 'developer' && (user?.role === 'admin' || user?.role === 'owner') && (
+                            <DeveloperSettingsTab />
                         )}
 
                     </div>
