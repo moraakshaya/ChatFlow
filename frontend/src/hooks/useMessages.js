@@ -10,6 +10,7 @@ const useMessages = (conversationId) => {
     const [nextCursor, setNextCursor] = useState(null);
     const [hasMore, setHasMore] = useState(false);
     const [isFetchingMore, setIsFetchingMore] = useState(false);
+    const [memberReadStates, setMemberReadStates] = useState({});
     const { socket } = useSocket();
     const { user } = useAuth();
     
@@ -33,6 +34,16 @@ const useMessages = (conversationId) => {
                 setMessages(response.data.data.reverse());
                 setNextCursor(response.data.pagination?.nextCursor || null);
                 setHasMore(response.data.pagination?.hasMore || false);
+            }
+            
+            // Also fetch read states for the conversation
+            try {
+                const statusResponse = await api.get(`/read-receipts/conversation/${conversationId}/status`);
+                if (statusResponse.data.success) {
+                    setMemberReadStates(statusResponse.data.data || {});
+                }
+            } catch (statusErr) {
+                console.error("Failed to fetch read status:", statusErr);
             }
         } catch (err) {
             console.error("Failed to fetch messages:", err);
@@ -99,6 +110,18 @@ const useMessages = (conversationId) => {
         };
 
         socket.on('new_message', handleNewMessage);
+        
+        // Listen for live message reads and update memberReadStates so it dynamically updates
+        const handleMessageRead = (payload) => {
+            const { conversationId: msgConvId, userId, messageId } = payload;
+            if (String(msgConvId) === String(currentConversationRef.current)) {
+                setMemberReadStates(prev => ({
+                    ...prev,
+                    [userId]: messageId
+                }));
+            }
+        };
+        socket.on('message:read', handleMessageRead);
 
 
 
@@ -157,6 +180,7 @@ const useMessages = (conversationId) => {
             socket.emit('leave_conversation', { conversationId });
             socket.off('connect', joinRoom);
             socket.off('new_message', handleNewMessage);
+            socket.off('message:read', handleMessageRead);
             socket.off('message_deleted', handleMessageDeleted);
             socket.off('reaction:added', handleReactionAdded);
             socket.off('reaction:removed', handleReactionRemoved);
@@ -335,7 +359,8 @@ const useMessages = (conversationId) => {
         sendAttachment,
         deleteMessage,
         toggleReaction,
-        refreshMessages: fetchMessages
+        refreshMessages: fetchMessages,
+        memberReadStates
     };
 };
 

@@ -102,6 +102,62 @@ export const getLastReadMessage = asyncHandler(async (req, res) => {
     });
 });
 
+// @desc    Get the read status of all members in a conversation
+// @route   GET /api/read-receipts/conversation/:conversationId/status
+// @access  Private
+export const getConversationReadStatus = asyncHandler(async (req, res) => {
+    const { conversationId } = req.params;
+    const userId = req.user._id;
+
+    const isMember = await readReceiptService.verifyActiveMembership(conversationId, userId);
+    if (!isMember) {
+        return res.status(403).json({ success: false, message: "You are not an active member of this conversation" });
+    }
+
+    const pipeline = [
+        {
+            $match: {
+                conversationId: mongoose.Types.ObjectId.createFromHexString(conversationId),
+                status: "read"
+            }
+        },
+        {
+            $lookup: {
+                from: "messages",
+                localField: "messageId",
+                foreignField: "_id",
+                as: "messageDetails"
+            }
+        },
+        { $unwind: "$messageDetails" },
+        {
+            $sort: {
+                "messageDetails.createdAt": -1,
+                "messageDetails._id": -1
+            }
+        },
+        {
+            $group: {
+                _id: "$userId",
+                lastReadMessageId: { $first: "$messageId" }
+            }
+        }
+    ];
+
+    const results = await ReadReceipt.aggregate(pipeline);
+
+    const readStates = {};
+    results.forEach(r => {
+        readStates[r._id.toString()] = r.lastReadMessageId;
+    });
+
+    res.status(200).json({
+        success: true,
+        data: readStates
+    });
+});
+
+
 // @desc    Get unread message count for a conversation
 // @route   GET /api/read-receipts/conversation/:conversationId/unread-count
 // @access  Private

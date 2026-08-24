@@ -16,6 +16,7 @@ import readReceiptRoutes from "./routes/readReceipt.routes.js";
 import attachmentRoutes from "./routes/attachment.routes.js";
 import messageSearchRoutes from "./routes/messageSearch.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
+import notificationPreferenceRoutes from "./routes/notificationPreference.routes.js";
 import apiKeyRoutes from "./routes/apiKey.routes.js";
 import webhookRoutes from "./routes/webhook.routes.js";
 import widgetRoutes from "./routes/public/v1/widget.routes.js";
@@ -41,6 +42,7 @@ app.use("/api/projects/:projectId/webhooks", webhookRoutes);
 app.use("/api/projects/:projectId/widget", widgetRoutes);
 app.use("/api/workspaces", workspaceRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/users/me/notification-preferences", notificationPreferenceRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/conversations", unreadRoutes); // Mount unread routes first to avoid catching /unread as an :id
 app.use("/api/conversations", conversationRoutes);

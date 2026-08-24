@@ -27,7 +27,7 @@ const ChatWindow = () => {
     } = useConversations();
     const activeChannel = conversations?.find(c => c._id === conversationId);
 
-    const { messages, isLoading, sendMessage, sendAttachment, deleteMessage, toggleReaction, hasMore, isFetchingMore, fetchMoreMessages } = useMessages(conversationId);
+    const { messages, isLoading, sendMessage, sendAttachment, deleteMessage, toggleReaction, hasMore, isFetchingMore, fetchMoreMessages, memberReadStates } = useMessages(conversationId);
 
     const [newMessage, setNewMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
@@ -224,10 +224,18 @@ const ChatWindow = () => {
         if (activeChannel?.type !== 'private') return null;
         if (msg.isDeleted) return null;
 
-        const isRead = readMessageIds.has(msg._id);
+        let isRead = readMessageIds.has(msg._id);
+        
+        if (!isRead && activeChannel.targetUser && memberReadStates) {
+            const otherUserId = activeChannel.targetUser._id || activeChannel.targetUser;
+            const otherUserLastReadId = memberReadStates[otherUserId];
+            if (otherUserLastReadId && msg._id <= otherUserLastReadId) {
+                isRead = true;
+            }
+        }
 
         return (
-            <span className={`inline-flex items-center ml-1 ${isRead ? 'text-blue-200' : 'text-blue-300 opacity-70'}`}>
+            <span className={`inline-flex items-center ml-1 ${isRead ? 'text-cyan-300 shadow-sm' : 'text-blue-300 opacity-70'}`}>
                 <CheckCheck size={13} strokeWidth={2.5} />
             </span>
         );
@@ -499,6 +507,22 @@ const ChatWindow = () => {
                             </div>
                         );
                     })
+                )}
+                {/* Typing Bubble inside chat feed */}
+                {typingUsers.size > 0 && (
+                    <div className="flex gap-3 mt-6 flex-row">
+                        <div className="w-8 shrink-0" />
+                        <div className="flex flex-col items-start max-w-[70%]">
+                            <div className="px-4 py-2.5 rounded-2xl shadow-sm bg-white border border-gray-100 text-gray-500 rounded-tl-none">
+                                <span className="flex items-center gap-1 text-xs font-medium">
+                                    <span className="typing-dots text-gray-400">
+                                        <span /><span /><span />
+                                    </span>
+                                    <span className="italic ml-1">{buildTypingText(typingUsers)}</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                 )}
                 {/* Invisible element to scroll to */}
                 <div ref={messagesEndRef} />

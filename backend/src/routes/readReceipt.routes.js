@@ -2,6 +2,7 @@ import express from "express";
 import {
     markMessagesAsRead,
     getLastReadMessage,
+    getConversationReadStatus,
     getUnreadCount
 } from "../controllers/readReceipt.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
@@ -15,6 +16,9 @@ router.route("/read")
 
 router.route("/conversation/:conversationId/last-read")
     .get(getLastReadMessage);
+
+router.route("/conversation/:conversationId/status")
+    .get(getConversationReadStatus);
 
 router.route("/conversation/:conversationId/unread-count")
     .get(getUnreadCount);

@@ -80,7 +80,7 @@ const GlobalSearchModal = ({ isOpen, onClose }) => {
                 }
             } catch (err) {
                 console.error("Search failed:", err);
-                setError("Failed to fetch search results");
+                setError(`Failed to fetch search results: ${err.response?.data?.message || err.message}`);
             } finally {
                 setIsLoading(false);
             }
