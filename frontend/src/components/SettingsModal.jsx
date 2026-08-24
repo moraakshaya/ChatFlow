@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, User as UserIcon, Lock, Bell, Check, Loader2, Eye, EyeOff, Building, Terminal, LogOut } from 'lucide-react';
+import { X, User as UserIcon, Lock, Bell, Check, Loader2, Eye, EyeOff, Building, Terminal, LogOut, List } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import OrganizationSettingsTab from './OrganizationSettingsTab';
 import DeveloperSettingsTab from './DeveloperSettingsTab';
+import ActivityLogsTab from './ActivityLogsTab';
 
 const SettingsModal = ({ isOpen, onClose }) => {
     const { user, updateUser } = useAuth();
@@ -210,6 +211,18 @@ const SettingsModal = ({ isOpen, onClose }) => {
                             >
                                 <Terminal size={18} />
                                 Developer
+                            </button>
+                            
+                            <button 
+                                onClick={() => setActiveTab('audit')}
+                                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                                    activeTab === 'audit' 
+                                    ? 'bg-blue-600/10 text-blue-400' 
+                                    : 'text-gray-400 hover:bg-gray-900 hover:text-gray-200'
+                                }`}
+                            >
+                                <List size={18} />
+                                Audit Logs
                             </button>
                         </>
                     )}
@@ -454,6 +467,11 @@ const SettingsModal = ({ isOpen, onClose }) => {
                         {/* Developer Tab */}
                         {activeTab === 'developer' && (user?.role === 'admin' || user?.role === 'owner') && (
                             <DeveloperSettingsTab />
+                        )}
+
+                        {/* Audit Logs Tab */}
+                        {activeTab === 'audit' && (user?.role === 'admin' || user?.role === 'owner') && (
+                            <ActivityLogsTab />
                         )}
 
                     </div>

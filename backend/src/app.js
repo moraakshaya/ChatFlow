@@ -22,6 +22,7 @@ import webhookRoutes from "./routes/webhook.routes.js";
 import widgetRoutes from "./routes/public/v1/widget.routes.js";
 import publicV1ConversationRoutes from "./routes/public/v1/conversation.routes.js";
 import publicV1MessageRoutes from "./routes/public/v1/message.routes.js";
+import activityLogRoutes from "./routes/activityLog.routes.js";
 import errorHandler from "./middleware/error.middleware.js";
 import AppError from "./errors/AppError.js";
 import { ERROR_CODES } from "./errors/errorCodes.js";
@@ -53,6 +54,7 @@ app.use("/api/message-reactions", messageReactionRoutes);
 app.use("/api/read-receipts", readReceiptRoutes);
 app.use("/api/attachments", attachmentRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/activity-logs", activityLogRoutes);
 
 // --- Public API Routes (v1) ---
 app.use("/api/v1/conversations", publicV1ConversationRoutes);

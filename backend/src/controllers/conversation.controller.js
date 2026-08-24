@@ -1,5 +1,6 @@
 import { conversationService } from "../services/conversation.service.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import { logActivity } from "../services/activityLogger.service.js";
 
 // @desc    Create new conversation
 // @route   POST /api/conversations
@@ -30,6 +31,15 @@ export const createConversation = asyncHandler(async (req, res) => {
     };
 
     const conversation = await conversationService.createConversation(conversationData);
+
+    await logActivity({
+        organizationId: req.user.organizationId,
+        userId: req.user._id,
+        action: "created",
+        entity: "conversation",
+        entityId: conversation._id,
+        metadata: { name: conversation.name, type: conversation.type }
+    });
 
     res.status(201).json({
         success: true,
@@ -140,6 +150,15 @@ export const archiveConversation = asyncHandler(async (req, res) => {
     const realtimeService = (await import("../services/realtime.service.js")).default;
     realtimeService.emitConversationArchived(req.params.id);
 
+    await logActivity({
+        organizationId: req.user.organizationId,
+        userId: req.user._id,
+        action: "archived",
+        entity: "conversation",
+        entityId: req.params.id,
+        metadata: {}
+    });
+
     res.status(200).json({
         success: true,
         message: "Conversation archived successfully"
@@ -156,6 +175,15 @@ export const unarchiveConversation = asyncHandler(async (req, res) => {
     const realtimeService = (await import("../services/realtime.service.js")).default;
     realtimeService.emitConversationUpdated(req.params.id, conversation);
 
+    await logActivity({
+        organizationId: req.user.organizationId,
+        userId: req.user._id,
+        action: "unarchived",
+        entity: "conversation",
+        entityId: req.params.id,
+        metadata: {}
+    });
+
     res.status(200).json({
         success: true,
         message: "Conversation unarchived successfully"
@@ -171,6 +199,15 @@ export const deleteConversation = asyncHandler(async (req, res) => {
     // Notify all members before the room disappears
     const realtimeService = (await import("../services/realtime.service.js")).default;
     realtimeService.emitConversationDeleted(req.params.id);
+
+    await logActivity({
+        organizationId: req.user.organizationId,
+        userId: req.user._id,
+        action: "deleted",
+        entity: "conversation",
+        entityId: req.params.id,
+        metadata: {}
+    });
 
     res.status(200).json({
         success: true,

@@ -1,6 +1,7 @@
 import Project from "../models/Project.js";
 import Organization from "../models/Organization.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import { logActivity } from "../services/activityLogger.service.js";
 
 // @desc    Create new project
 // @route   POST /api/projects
@@ -23,6 +24,15 @@ export const createProject = asyncHandler(async (req, res) => {
 
     // Mongoose duplicate key errors (11000) for name/code are typically handled by global error middleware.
     const project = await Project.create(req.body);
+
+    await logActivity({
+        organizationId,
+        userId: req.user._id,
+        action: "created",
+        entity: "project",
+        entityId: project._id,
+        metadata: { name: project.name, code: project.code }
+    });
 
     res.status(201).json({
         success: true,
@@ -143,8 +153,17 @@ export const deleteProject = asyncHandler(async (req, res) => {
         });
     }
 
+    await logActivity({
+        organizationId: project.organizationId,
+        userId: req.user._id,
+        action: "deleted",
+        entity: "project",
+        entityId: project._id,
+        metadata: { name: project.name, code: project.code }
+    });
+
     res.status(200).json({
         success: true,
-        message: "Project deactivated successfully"
+        message: "Project deleted successfully"
     });
 });
