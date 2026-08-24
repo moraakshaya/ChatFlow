@@ -1,7 +1,7 @@
 import { io } from 'socket.io-client';
 
 export const createSocketClient = (token) => {
-  const socket = io('http://localhost:3000', {
+  const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', {
     auth: {
       token
     },
