@@ -3,6 +3,8 @@ import { MessageSquare, FolderPlus, Briefcase } from 'lucide-react';
 import { useWorkspace } from '../context/WorkspaceContext';
 import CreateProjectModal from '../components/CreateProjectModal';
 import CreateWorkspaceModal from '../components/CreateWorkspaceModal';
+import CreateChannelModal from '../components/CreateChannelModal';
+import InviteMembersModal from '../components/InviteMembersModal';
 
 const Dashboard = () => {
     const { projects, workspaces, activeProject, activeWorkspace, isLoading } = useWorkspace();
@@ -58,6 +60,9 @@ const Dashboard = () => {
         );
     }
 
+    const [isCreateChannelOpen, setIsCreateChannelOpen] = React.useState(false);
+    const [isInviteOpen, setIsInviteOpen] = React.useState(false);
+
     // STATE 3: Has Workspace, ready to chat
     return (
         <div className="flex-1 flex flex-col items-center justify-center bg-white h-full p-8 text-center">
@@ -72,15 +77,32 @@ const Dashboard = () => {
             </p>
             
             <div className="grid grid-cols-2 gap-4 max-w-md w-full">
-                <button className="px-4 py-3 bg-white border border-gray-200 rounded-xl hover:border-blue-500 hover:shadow-sm transition-all text-sm font-medium text-gray-700 text-left flex flex-col gap-1 group">
+                <button 
+                    onClick={() => setIsCreateChannelOpen(true)}
+                    className="px-4 py-3 bg-white border border-gray-200 rounded-xl hover:border-blue-500 hover:shadow-sm transition-all text-sm font-medium text-gray-700 text-left flex flex-col gap-1 group"
+                >
                     <span className="text-blue-600 group-hover:text-blue-700">Create a Channel</span>
                     <span className="text-gray-400 font-normal text-xs">Start a new topic</span>
                 </button>
-                <button className="px-4 py-3 bg-white border border-gray-200 rounded-xl hover:border-blue-500 hover:shadow-sm transition-all text-sm font-medium text-gray-700 text-left flex flex-col gap-1 group">
+                <button 
+                    onClick={() => setIsInviteOpen(true)}
+                    className="px-4 py-3 bg-white border border-gray-200 rounded-xl hover:border-blue-500 hover:shadow-sm transition-all text-sm font-medium text-gray-700 text-left flex flex-col gap-1 group"
+                >
                     <span className="text-blue-600 group-hover:text-blue-700">Invite People</span>
                     <span className="text-gray-400 font-normal text-xs">Grow your workspace</span>
                 </button>
             </div>
+
+            {/* Modals */}
+            <CreateChannelModal 
+                isOpen={isCreateChannelOpen} 
+                onClose={() => setIsCreateChannelOpen(false)} 
+                onChannelCreated={() => setIsCreateChannelOpen(false)}
+            />
+            <InviteMembersModal 
+                isOpen={isInviteOpen} 
+                onClose={() => setIsInviteOpen(false)} 
+            />
         </div>
     );
 };
