@@ -680,34 +680,47 @@ const ChatWindow = () => {
             />
             {/* Image Viewer Modal */}
             {viewingImage && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 sm:p-8" onClick={() => setViewingImage(null)}>
+                <div className="fixed inset-0 z-50 flex flex-col bg-black/95 backdrop-blur-sm transition-opacity" onClick={() => setViewingImage(null)}>
+                    {/* Header */}
                     <div 
-                        className="relative max-w-full max-h-full flex flex-col items-center justify-center bg-transparent"
-                        onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
+                        className="flex items-center justify-between p-4 sm:px-6 bg-gradient-to-b from-black/80 to-transparent"
+                        onClick={(e) => e.stopPropagation()}
                     >
-                        {/* Top Actions Bar */}
-                        <div className="absolute -top-12 right-0 flex items-center gap-4 text-white">
+                        <div className="flex items-center gap-3 text-white">
+                            <ImageIcon size={20} className="text-gray-400" />
+                            <span className="font-medium truncate max-w-[200px] sm:max-w-md text-sm sm:text-base">
+                                {viewingImage.filename}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-4 text-white">
                             <button 
                                 onClick={() => window.open(viewingImage.url, '_blank')}
-                                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg backdrop-blur-sm transition-colors text-sm font-medium"
+                                className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm font-medium"
+                                title="Download"
                             >
-                                <Download size={16} /> Download
+                                <Download size={16} /> <span className="hidden sm:inline">Download</span>
                             </button>
                             <button 
                                 onClick={() => setViewingImage(null)}
-                                className="p-2 bg-white/10 hover:bg-white/20 rounded-lg backdrop-blur-sm transition-colors"
+                                className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                                title="Close"
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                             </button>
                         </div>
-                        
-                        {/* The Image */}
+                    </div>
+                    
+                    {/* Image Area */}
+                    <div 
+                        className="flex-1 flex items-center justify-center p-4 sm:p-8 overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <img 
                             src={viewingImage.url} 
                             alt={viewingImage.filename} 
-                            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+                            className="max-w-full max-h-full object-contain drop-shadow-2xl select-none"
+                            draggable={false}
                         />
-                        <p className="mt-4 text-white/70 text-sm font-medium">{viewingImage.filename}</p>
                     </div>
                 </div>
             )}
