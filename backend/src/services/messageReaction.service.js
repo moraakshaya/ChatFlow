@@ -48,10 +48,7 @@ class MessageReactionService {
         const { error, message, conversation } = await this.validateReactionPreconditions(messageId, userId);
         if (error) return { error };
 
-        const allowedReactions = ["❤️", "👍", "😂", "🔥", "🎉", "😢", "😡", "👏"];
-        if (!allowedReactions.includes(reaction)) {
-            return { error: { status: 400, message: "Invalid reaction" } };
-        }
+
 
         try {
             const updatedReaction = await MessageReaction.findOneAndUpdate(
