@@ -400,7 +400,7 @@ const ChatWindow = () => {
                                                     </button>
 
                                                     {msg.type === 'attachment' && msg.attachments?.length > 0 && (
-                                                        <button onClick={() => { alert('Download simulated (Mock Storage)'); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2">
+                                                        <button onClick={() => { window.open(msg.attachments[0].url, '_blank'); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2">
                                                             <Download size={14} /> Download
                                                         </button>
                                                     )}
@@ -453,7 +453,7 @@ const ChatWindow = () => {
                                                             <button 
                                                                 className={`p-2 rounded-full transition-colors shrink-0 ${isOwnMessage ? 'hover:bg-blue-500 text-blue-200 hover:text-white' : 'hover:bg-gray-200 text-gray-400 hover:text-gray-700'}`}
                                                                 title="Download (Mock)"
-                                                                onClick={() => alert('Download simulated (Mock Storage)')}
+                                                                onClick={() => window.open(att.url, '_blank')}
                                                             >
                                                                 <Download size={18} />
                                                             </button>
