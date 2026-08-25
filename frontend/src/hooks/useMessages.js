@@ -275,7 +275,7 @@ const useMessages = (conversationId) => {
                 type: 'attachment',
                 clientMessageId: crypto.randomUUID(),
                 attachments: [{
-                    url: attachmentId, // We use attachmentId here for the mock URL reference
+                    url: uploadJson.secure_url, 
                     filename: file.name,
                     mimeType: file.type || 'application/octet-stream',
                     sizeBytes: file.size
