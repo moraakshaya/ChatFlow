@@ -8,7 +8,8 @@ const NotificationsPanel = ({
     notifications, 
     markAsRead, 
     markAllAsRead, 
-    deleteNotification 
+    deleteNotification,
+    position = 'bottom-left'
 }) => {
     const navigate = useNavigate();
     const panelRef = useRef(null);
@@ -46,10 +47,14 @@ const NotificationsPanel = ({
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
+    const positionClasses = position === 'top-right' 
+        ? 'top-14 left-0 right-0 sm:left-auto sm:right-4' 
+        : 'bottom-16 left-4';
+
     return (
         <div 
             ref={panelRef}
-            className="absolute bottom-16 left-4 w-80 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 flex flex-col overflow-hidden"
+            className={`absolute ${positionClasses} w-full sm:w-80 bg-gray-900 sm:border border-b border-gray-700 sm:rounded-lg shadow-2xl z-50 flex flex-col overflow-hidden`}
             style={{ maxHeight: '400px' }}
         >
             {/* Header */}

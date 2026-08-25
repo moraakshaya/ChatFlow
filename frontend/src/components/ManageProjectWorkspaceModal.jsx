@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Folder, Briefcase, Trash2, Edit2, Check, XCircle } from 'lucide-react';
 import { useWorkspace } from '../context/WorkspaceContext';
 
@@ -107,17 +108,19 @@ const ManageProjectWorkspaceModal = ({ isOpen, onClose }) => {
         }
     };
 
-    return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-gray-900 rounded-xl shadow-2xl w-full max-w-3xl flex overflow-hidden max-h-[85vh] border border-gray-700 animate-in fade-in zoom-in-95 duration-200">
+    if (!isOpen || !activeProject) return null;
+
+    return createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="bg-gray-900 rounded-xl shadow-2xl w-full max-w-3xl flex flex-col md:flex-row overflow-hidden max-h-[85vh] border border-gray-700 animate-in fade-in zoom-in-95 duration-200">
                 
-                {/* Left Sidebar Menu */}
-                <div className="w-64 bg-gray-950 border-r border-gray-800 p-4 flex flex-col gap-2">
-                    <h2 className="text-xl font-bold text-white mb-4 px-2">Manage Project</h2>
+                {/* Left Sidebar Menu (Horizontal scroll on mobile) */}
+                <div className="w-full md:w-64 bg-gray-950 border-b md:border-b-0 md:border-r border-gray-800 p-3 md:p-4 flex flex-row md:flex-col gap-2 overflow-x-auto overflow-y-hidden shrink-0 no-scrollbar">
+                    <h2 className="hidden md:block text-xl font-bold text-white mb-4 px-2">Manage Project</h2>
                     
                     <button 
                         onClick={() => setActiveTab('project')}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                        className={`shrink-0 whitespace-nowrap flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                             activeTab === 'project' 
                             ? 'bg-blue-600/10 text-blue-400' 
                             : 'text-gray-400 hover:bg-gray-900 hover:text-gray-200'
@@ -129,7 +132,7 @@ const ManageProjectWorkspaceModal = ({ isOpen, onClose }) => {
                     
                     <button 
                         onClick={() => setActiveTab('workspaces')}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                        className={`shrink-0 whitespace-nowrap flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                             activeTab === 'workspaces' 
                             ? 'bg-blue-600/10 text-blue-400' 
                             : 'text-gray-400 hover:bg-gray-900 hover:text-gray-200'
@@ -311,7 +314,8 @@ const ManageProjectWorkspaceModal = ({ isOpen, onClose }) => {
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Search, Loader2, MessageSquare, Hash, Lock, X } from 'lucide-react';
 import api from '../api/axios';
@@ -64,7 +65,7 @@ const GlobalSearchModal = ({ isOpen, onClose }) => {
 
             setIsLoading(true);
             setError('');
-
+            
             try {
                 const response = await api.get('/messages/search', {
                     params: {
@@ -79,8 +80,8 @@ const GlobalSearchModal = ({ isOpen, onClose }) => {
                     setSelectedIndex(-1);
                 }
             } catch (err) {
-                console.error("Search failed:", err);
-                setError(`Failed to fetch search results: ${err.response?.data?.message || err.message}`);
+                console.error("Search error:", err);
+                setError('Failed to perform search. Please try again.');
             } finally {
                 setIsLoading(false);
             }
@@ -91,26 +92,26 @@ const GlobalSearchModal = ({ isOpen, onClose }) => {
         }, 300);
 
         return () => clearTimeout(timerId);
-    }, [searchQuery, isOpen, activeWorkspace]);
+    }, [searchQuery, activeWorkspace, isOpen]);
 
     const handleInputKeyDown = (e) => {
-        if (!results || results.length === 0) return;
+        if (results.length === 0) return;
 
         if (e.key === 'ArrowDown') {
             e.preventDefault();
-            setSelectedIndex((prev) => (prev < results.length - 1 ? prev + 1 : prev));
+            setSelectedIndex(prev => (prev < results.length - 1 ? prev + 1 : prev));
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
-            setSelectedIndex((prev) => (prev > 0 ? prev - 1 : prev));
+            setSelectedIndex(prev => (prev > 0 ? prev - 1 : prev));
         } else if (e.key === 'Enter' && selectedIndex >= 0) {
             e.preventDefault();
-            handleResultClick(results[selectedIndex].conversationId);
+            handleSelectResult(results[selectedIndex]);
         }
     };
 
-    const handleResultClick = (conversationId) => {
+    const handleSelectResult = (result) => {
+        navigate(`/channel/${result.conversationId}?msgId=${result._id}`);
         onClose();
-        navigate(`/channel/${conversationId}`);
     };
     
     const getConversationDetails = (convId) => {
@@ -119,7 +120,7 @@ const GlobalSearchModal = ({ isOpen, onClose }) => {
 
     if (!isOpen) return null;
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 bg-black/50 flex items-start justify-center pt-[10vh] z-[100] p-4" onClick={onClose}>
             <div 
                 className="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[80vh] overflow-hidden transform transition-all"
@@ -218,7 +219,8 @@ const GlobalSearchModal = ({ isOpen, onClose }) => {
                     </span>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 

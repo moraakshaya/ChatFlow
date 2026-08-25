@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, User as UserIcon, Lock, Bell, Check, Loader2, Eye, EyeOff, Building, Terminal, LogOut, List } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
@@ -141,17 +142,19 @@ const SettingsModal = ({ isOpen, onClose }) => {
         }
     };
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-gray-900 rounded-xl shadow-2xl w-full max-w-3xl flex overflow-hidden max-h-[85vh] border border-gray-700 animate-in fade-in zoom-in-95 duration-200">
+    if (!isOpen) return null;
+
+    return createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="bg-gray-900 rounded-xl shadow-2xl w-full max-w-3xl flex flex-col md:flex-row overflow-hidden max-h-[85vh] border border-gray-700 animate-in fade-in zoom-in-95 duration-200">
                 
-                {/* Left Sidebar Menu */}
-                <div className="w-64 bg-gray-950 border-r border-gray-800 p-4 flex flex-col gap-2">
-                    <h2 className="text-xl font-bold text-white mb-4 px-2">Settings</h2>
+                {/* Left Sidebar Menu (Horizontal scroll on mobile) */}
+                <div className="w-full md:w-64 bg-gray-950 border-b md:border-b-0 md:border-r border-gray-800 p-3 md:p-4 flex flex-row md:flex-col gap-2 overflow-x-auto overflow-y-hidden shrink-0 no-scrollbar">
+                    <h2 className="hidden md:block text-xl font-bold text-white mb-4 px-2">Settings</h2>
                     
                     <button 
                         onClick={() => setActiveTab('profile')}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                        className={`shrink-0 whitespace-nowrap flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                             activeTab === 'profile' 
                             ? 'bg-blue-600/10 text-blue-400' 
                             : 'text-gray-400 hover:bg-gray-900 hover:text-gray-200'
@@ -163,7 +166,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
                     
                     <button 
                         onClick={() => setActiveTab('preferences')}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                        className={`shrink-0 whitespace-nowrap flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                             activeTab === 'preferences' 
                             ? 'bg-blue-600/10 text-blue-400' 
                             : 'text-gray-400 hover:bg-gray-900 hover:text-gray-200'
@@ -175,7 +178,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
 
                     <button 
                         onClick={() => setActiveTab('security')}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                        className={`shrink-0 whitespace-nowrap flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                             activeTab === 'security' 
                             ? 'bg-blue-600/10 text-blue-400' 
                             : 'text-gray-400 hover:bg-gray-900 hover:text-gray-200'
@@ -187,11 +190,11 @@ const SettingsModal = ({ isOpen, onClose }) => {
 
                     {(user?.role === 'admin' || user?.role === 'owner') && (
                         <>
-                            <div className="h-px bg-gray-800 my-2 mx-2"></div>
+                            <div className="hidden md:block h-px bg-gray-800 my-2 mx-2"></div>
                             
                             <button 
                                 onClick={() => setActiveTab('organization')}
-                                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                                className={`shrink-0 whitespace-nowrap flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                                     activeTab === 'organization' 
                                     ? 'bg-blue-600/10 text-blue-400' 
                                     : 'text-gray-400 hover:bg-gray-900 hover:text-gray-200'
@@ -203,7 +206,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
 
                             <button 
                                 onClick={() => setActiveTab('developer')}
-                                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                                className={`shrink-0 whitespace-nowrap flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                                     activeTab === 'developer' 
                                     ? 'bg-blue-600/10 text-blue-400' 
                                     : 'text-gray-400 hover:bg-gray-900 hover:text-gray-200'
@@ -215,7 +218,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
                             
                             <button 
                                 onClick={() => setActiveTab('audit')}
-                                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                                className={`shrink-0 whitespace-nowrap flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                                     activeTab === 'audit' 
                                     ? 'bg-blue-600/10 text-blue-400' 
                                     : 'text-gray-400 hover:bg-gray-900 hover:text-gray-200'
@@ -477,7 +480,8 @@ const SettingsModal = ({ isOpen, onClose }) => {
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 

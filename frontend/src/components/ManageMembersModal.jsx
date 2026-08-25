@@ -254,20 +254,20 @@ const ManageMembersModal = ({ isOpen, onClose, channel }) => {
                                 </div>
                             ) : (
                                 availableUsers.map(u => (
-                                    <div key={u._id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded bg-gray-200 flex items-center justify-center text-gray-600 font-semibold text-sm">
+                                    <div key={u._id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg gap-2 overflow-hidden">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="w-8 h-8 rounded bg-gray-200 flex items-center justify-center text-gray-600 font-semibold text-sm shrink-0">
                                                 {u.fullName?.charAt(0)}
                                             </div>
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-900">{u.fullName}</p>
-                                                <p className="text-xs text-gray-500">{u.email}</p>
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-medium text-gray-900 truncate">{u.fullName}</p>
+                                                <p className="text-xs text-gray-500 truncate">{u.email}</p>
                                             </div>
                                         </div>
                                         <button
                                             onClick={() => handleAddMember(u._id)}
                                             disabled={actionLoadingId === u._id}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+                                            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors shrink-0"
                                         >
                                             {actionLoadingId === u._id ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
                                             Add

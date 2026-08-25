@@ -127,10 +127,10 @@ const Sidebar = () => {
 
     return (
         <>
-            <div className="w-64 bg-gray-900 text-gray-300 flex flex-col h-full flex-shrink-0 relative">
-                {/* Header / Workspace Selector */}
+            <div className="w-full bg-gray-900 text-gray-300 flex flex-col h-full flex-shrink-0 relative">
+                {/* Header / Workspace Selector (Hidden on mobile) */}
                 <div 
-                    className="h-16 flex items-center justify-between px-4 hover:bg-gray-800 cursor-pointer border-b border-gray-800 transition-colors relative"
+                    className="hidden md:flex h-16 items-center justify-between px-4 hover:bg-gray-800 cursor-pointer border-b border-gray-800 transition-colors relative"
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 >
                     <div className="flex-1 truncate">
@@ -408,8 +408,8 @@ const Sidebar = () => {
                     </div>
                 )}
 
-                {/* User Profile Footer */}
-                <div className="p-4 bg-gray-950 border-t border-gray-800 flex items-center justify-between">
+                {/* User Profile Footer (Hidden on mobile) */}
+                <div className="hidden md:flex p-4 bg-gray-950 border-t border-gray-800 items-center justify-between flex-shrink-0">
                     <div className="flex items-center gap-3 truncate">
                         <div className="w-8 h-8 rounded-md bg-blue-600 flex items-center justify-center text-white font-bold flex-shrink-0">
                             {user?.fullName?.charAt(0).toUpperCase() || '?'}

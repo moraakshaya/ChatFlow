@@ -5,8 +5,14 @@
   --primary-hover: #2563eb;
 }
 
-body {
+body, html {
   margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+body {
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
   background-color: #f9fafb;
 }

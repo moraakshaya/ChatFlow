@@ -295,7 +295,7 @@ const ChatWindow = () => {
             <div 
                 ref={scrollContainerRef}
                 onScroll={handleScroll}
-                className="flex-1 overflow-y-auto p-6 space-y-6"
+                className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6"
             >
                 {isFetchingMore && (
                     <div className="flex justify-center py-2">
@@ -346,7 +346,7 @@ const ChatWindow = () => {
                                     <div className="w-8 shrink-0" />
                                 )}
 
-                                <div className={`flex flex-col max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+                                <div className={`flex flex-col max-w-[70%] min-w-0 ${isOwnMessage ? 'items-end' : 'items-start'}`}>
                                     {/* Sender name (only show if not grouped, and not own message in DM) */}
                                     {!isGrouped && (
                                         <div className={`flex items-baseline gap-2 mb-1 ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -357,7 +357,7 @@ const ChatWindow = () => {
                                     )}
 
                                     {/* Message Bubble & Reactions Container */}
-                                    <div className={`relative flex items-center gap-2 ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}>
+                                    <div className={`relative flex items-center gap-2 min-w-0 max-w-full ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}>
 
 
 
@@ -388,7 +388,7 @@ const ChatWindow = () => {
                                         )}
 
                                         {/* ── Main Bubble ── */}
-                                        <div className={`px-4 pt-2 pb-1.5 rounded-2xl shadow-sm relative group/bubble ${
+                                        <div className={`px-4 pt-2 pb-1.5 rounded-2xl shadow-sm relative group/bubble min-w-0 max-w-full ${
                                             isOwnMessage
                                                 ? 'bg-blue-600 text-white rounded-tr-none'
                                                 : 'bg-white border border-gray-100 text-gray-800 rounded-tl-none'
@@ -495,7 +495,7 @@ const ChatWindow = () => {
                                                                 <p className={`text-sm font-medium truncate ${isOwnMessage ? 'text-white' : 'text-gray-900'}`} title={att.filename}>
                                                                     {att.filename}
                                                                 </p>
-                                                                <p className={`text-xs mt-0.5 ${isOwnMessage ? 'text-blue-200' : 'text-gray-500'}`}>
+                                                                <p className={`text-xs mt-0.5 truncate ${isOwnMessage ? 'text-blue-200' : 'text-gray-500'}`} title={att.mimeType?.split('/')[1]?.toUpperCase() || 'FILE'}>
                                                                     {formatBytes(att.sizeBytes)} • {att.mimeType?.split('/')[1]?.toUpperCase() || 'FILE'}
                                                                 </p>
                                                             </div>
