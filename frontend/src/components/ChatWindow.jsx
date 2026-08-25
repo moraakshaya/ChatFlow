@@ -244,6 +244,33 @@ const ChatWindow = () => {
         );
     };
 
+    const handleDownload = async (e, url, filename) => {
+        e.preventDefault();
+        try {
+            // Check if it's a cloudinary URL and force download via fl_attachment
+            if (url.includes('cloudinary.com') && url.includes('/upload/')) {
+                const downloadUrl = url.replace('/upload/', '/upload/fl_attachment/');
+                window.open(downloadUrl, '_blank');
+                return;
+            }
+            
+            // Fallback for other URLs
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = filename || 'download';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+        } catch (error) {
+            console.error('Download failed', error);
+            window.open(url, '_blank'); // fallback
+        }
+    };
+
     if (!activeChannel) {
         return (
             <div className="flex-1 flex flex-col bg-white overflow-hidden items-center justify-center">
@@ -694,7 +721,7 @@ const ChatWindow = () => {
                         </div>
                         <div className="flex items-center gap-2 sm:gap-4 text-white">
                             <button 
-                                onClick={() => window.open(viewingImage.url, '_blank')}
+                                onClick={(e) => handleDownload(e, viewingImage.url, viewingImage.filename)}
                                 className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm font-medium"
                                 title="Download"
                             >
