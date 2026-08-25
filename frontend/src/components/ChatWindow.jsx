@@ -496,7 +496,7 @@ const ChatWindow = () => {
                                                                 : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
                                                         }`}
                                                     >
-                                                        <span>{emoji}</span>
+                                                        <span style={{ fontFamily: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif' }}>{emoji}</span>
                                                         <span>{count}</span>
                                                     </button>
                                                 );
