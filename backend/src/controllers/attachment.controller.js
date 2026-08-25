@@ -85,14 +85,14 @@ export const initUpload = asyncHandler(async (req, res) => {
         uploadedBy: userId,
         fileName, // Ideally sanitized in production
         storageKey,
-        storageProvider: "mock",
+        storageProvider: "cloudinary",
         mimeType,
         fileSize,
         fileExtension: fileName.includes(".") ? fileName.substring(fileName.lastIndexOf(".")) : null,
         metadata: idempotencyKey ? { idempotencyKey } : {}
     });
 
-    const { uploadUrl, expiresAt } = await StorageService.generateUploadUrl(storageKey, mimeType);
+    const { uploadUrl, expiresAt, cloudinaryData } = await StorageService.generateUploadUrl(storageKey, mimeType);
 
     res.status(201).json({
         success: true,
@@ -101,6 +101,7 @@ export const initUpload = asyncHandler(async (req, res) => {
             uploadUrl,
             storageKey,
             expiresAt,
+            cloudinaryData,
             status: attachment.status
         }
     });
@@ -111,6 +112,7 @@ export const initUpload = asyncHandler(async (req, res) => {
 // @access  Private
 export const completeUpload = asyncHandler(async (req, res) => {
     const { attachmentId } = req.params;
+    const { cloudinaryUrl } = req.body;
     const userId = req.user._id;
 
     const attachment = await Attachment.findById(attachmentId);
@@ -128,13 +130,14 @@ export const completeUpload = asyncHandler(async (req, res) => {
     }
 
     const isValid = await StorageService.verifyObject(attachment.storageKey);
-    if (!isValid) {
+    if (!isValid || !cloudinaryUrl) {
         attachment.status = "failed";
         await attachment.save();
-        return res.status(400).json({ success: false, message: "File verification failed" });
+        return res.status(400).json({ success: false, message: "File verification failed or missing url" });
     }
 
     attachment.status = "uploaded";
+    attachment.storageKey = cloudinaryUrl; // Save the secure URL so generateDownloadUrl works
     await attachment.save();
 
     res.status(200).json({

@@ -63,6 +63,9 @@ const ChatWindow = () => {
     const [activeDropdownId, setActiveDropdownId] = useState(null);
     const dropdownRef = useRef(null);
 
+    // Image Viewer state
+    const [viewingImage, setViewingImage] = useState(null);
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
@@ -400,7 +403,14 @@ const ChatWindow = () => {
                                                     </button>
 
                                                     {msg.type === 'attachment' && msg.attachments?.length > 0 && (
-                                                        <button onClick={() => { window.open(msg.attachments[0].url, '_blank'); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2">
+                                                        <button onClick={() => { 
+                                                            if (msg.attachments[0].mimeType?.startsWith('image/')) {
+                                                                setViewingImage(msg.attachments[0]);
+                                                            } else {
+                                                                window.open(msg.attachments[0].url, '_blank');
+                                                            }
+                                                            setActiveDropdownId(null); 
+                                                        }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2">
                                                             <Download size={14} /> Download
                                                         </button>
                                                     )}
@@ -435,8 +445,20 @@ const ChatWindow = () => {
                                                 </div>
                                             ) : msg.type === 'attachment' && msg.attachments?.length > 0 ? (
                                                 <div className="flex flex-col gap-2 min-w-[200px]">
-                                                    {msg.attachments.map((att, idx) => (
-                                                        <div key={idx} className={`flex items-center gap-3 p-3 mr-6 rounded-xl border ${isOwnMessage ? 'bg-blue-700/50 border-blue-500' : 'bg-gray-50 border-gray-200'}`}>
+                                                    {msg.attachments.map((att, index) => (
+                                                        <div 
+                                                            key={index} 
+                                                            className={`flex items-center gap-3 p-3 mt-1 rounded-xl border transition-colors ${
+                                                                isOwnMessage 
+                                                                    ? 'bg-blue-600 border-blue-500 hover:bg-blue-700' 
+                                                                    : 'bg-gray-50 border-gray-100 hover:bg-gray-100'
+                                                            } ${att.mimeType?.startsWith('image/') ? 'cursor-pointer' : ''}`}
+                                                            onClick={() => {
+                                                                if (att.mimeType?.startsWith('image/')) {
+                                                                    setViewingImage(att);
+                                                                }
+                                                            }}
+                                                        >
                                                             <div className={`p-2 rounded-lg ${isOwnMessage ? 'bg-blue-500 text-white' : 'bg-white text-blue-600 shadow-sm'}`}>
                                                                 {att.mimeType?.startsWith('image/') ? <ImageIcon size={24} /> : 
                                                                  att.mimeType?.includes('pdf') ? <FileText size={24} /> : 
@@ -452,8 +474,15 @@ const ChatWindow = () => {
                                                             </div>
                                                             <button 
                                                                 className={`p-2 rounded-full transition-colors shrink-0 ${isOwnMessage ? 'hover:bg-blue-500 text-blue-200 hover:text-white' : 'hover:bg-gray-200 text-gray-400 hover:text-gray-700'}`}
-                                                                title="Download (Mock)"
-                                                                onClick={() => window.open(att.url, '_blank')}
+                                                                title="Download"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    if (att.mimeType?.startsWith('image/')) {
+                                                                        setViewingImage(att);
+                                                                    } else {
+                                                                        window.open(att.url, '_blank');
+                                                                    }
+                                                                }}
                                                             >
                                                                 <Download size={18} />
                                                             </button>
@@ -649,6 +678,40 @@ const ChatWindow = () => {
                     navigate('/');
                 }}
             />
+            {/* Image Viewer Modal */}
+            {viewingImage && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 sm:p-8" onClick={() => setViewingImage(null)}>
+                    <div 
+                        className="relative max-w-full max-h-full flex flex-col items-center justify-center bg-transparent"
+                        onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
+                    >
+                        {/* Top Actions Bar */}
+                        <div className="absolute -top-12 right-0 flex items-center gap-4 text-white">
+                            <button 
+                                onClick={() => window.open(viewingImage.url, '_blank')}
+                                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg backdrop-blur-sm transition-colors text-sm font-medium"
+                            >
+                                <Download size={16} /> Download
+                            </button>
+                            <button 
+                                onClick={() => setViewingImage(null)}
+                                className="p-2 bg-white/10 hover:bg-white/20 rounded-lg backdrop-blur-sm transition-colors"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
+                        </div>
+                        
+                        {/* The Image */}
+                        <img 
+                            src={viewingImage.url} 
+                            alt={viewingImage.filename} 
+                            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+                        />
+                        <p className="mt-4 text-white/70 text-sm font-medium">{viewingImage.filename}</p>
+                    </div>
+                </div>
+            )}
+            
         </div>
     );
 };

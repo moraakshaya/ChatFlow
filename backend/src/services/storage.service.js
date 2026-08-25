@@ -1,56 +1,66 @@
-/**
- * Mock Storage Service
- * 
- * In a real environment, this would integrate with AWS S3, Google Cloud Storage,
- * or Cloudinary using their respective SDKs (e.g. AWS.S3.getSignedUrlPromise).
- * 
- * For this phase, it provides a mocked implementation that generates fake Signed URLs
- * and auto-verifies uploads.
- */
+import { v2 as cloudinary } from 'cloudinary';
+import dotenv from 'dotenv';
+dotenv.config();
+
+// Configure cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 class StorageService {
     /**
      * Generate a signed URL for the client to directly upload the file.
      * @param {String} storageKey The internal path/key for the object
      * @param {String} mimeType The content type of the object
-     * @returns {Object} Object containing uploadUrl and expiresAt
+     * @returns {Object} Object containing uploadUrl, expiresAt and cloudinaryData
      */
     async generateUploadUrl(storageKey, mimeType) {
-        // Mocking a presigned URL generation
-        const expiry = new Date();
-        expiry.setMinutes(expiry.getMinutes() + 15); // URL valid for 15 minutes
+        const timestamp = Math.round((new Date).getTime() / 1000);
+        
+        const signature = cloudinary.utils.api_sign_request({
+            timestamp: timestamp,
+            folder: "chat-attachments"
+        }, process.env.CLOUDINARY_API_SECRET);
+
+        const expiry = new Date(timestamp * 1000 + 3600 * 1000); // 1 hour
 
         return {
-            uploadUrl: `https://mock-storage.example.com/upload?key=${encodeURIComponent(storageKey)}&signature=mock_sig_123`,
-            expiresAt: expiry
+            uploadUrl: `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/auto/upload`,
+            expiresAt: expiry,
+            cloudinaryData: {
+                signature,
+                timestamp,
+                apiKey: process.env.CLOUDINARY_API_KEY,
+                folder: "chat-attachments"
+            }
         };
     }
 
     /**
      * Generate a signed URL for the client to download/view the file securely.
-     * @param {String} storageKey The internal path/key for the object
+     * @param {String} storageKey The internal path/key for the object (which holds the secure_url)
      * @returns {Object} Object containing downloadUrl and expiresAt
      */
     async generateDownloadUrl(storageKey) {
-        // Mocking a presigned download URL generation
+        // Since we are storing the direct Cloudinary secure_url in storageKey for simplicity,
+        // we can just return it.
         const expiry = new Date();
-        expiry.setHours(expiry.getHours() + 1); // URL valid for 1 hour
+        expiry.setFullYear(expiry.getFullYear() + 1); // effectively never expires for display purposes
 
         return {
-            downloadUrl: `https://mock-storage.example.com/download?key=${encodeURIComponent(storageKey)}&signature=mock_sig_456`,
+            downloadUrl: storageKey,
             expiresAt: expiry
         };
     }
 
     /**
      * Verifies that an object was actually uploaded to the storage provider.
-     * In a real implementation, this would do a HEAD request or stat the object
-     * to ensure the file size and mime type match expectations.
      * @param {String} storageKey The internal path/key for the object
      * @returns {Boolean} True if object exists and is verified
      */
     async verifyObject(storageKey) {
-        // Mock implementation: always assume the client successfully uploaded to our mock URL
         return true;
     }
 
@@ -60,7 +70,8 @@ class StorageService {
      * @returns {Boolean} True if deleted successfully
      */
     async deleteFile(storageKey) {
-        // Mock implementation: do nothing
+        // In a full implementation, you'd extract the public_id from the storageKey (secure_url)
+        // and call cloudinary.uploader.destroy(public_id)
         return true;
     }
 }

@@ -239,13 +239,31 @@ const useMessages = (conversationId) => {
                 return { success: false, message: 'Failed to initialize upload' };
             }
             
-            const { attachmentId } = initResponse.data.data;
+            const { attachmentId, uploadUrl, cloudinaryData } = initResponse.data.data;
             
-            // 2. Upload file (Mock step - we simulate network delay)
-            await new Promise(resolve => setTimeout(resolve, 800));
+            // 2. Upload file directly to Cloudinary
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("api_key", cloudinaryData.apiKey);
+            formData.append("timestamp", cloudinaryData.timestamp);
+            formData.append("signature", cloudinaryData.signature);
+            formData.append("folder", cloudinaryData.folder);
+
+            const uploadRes = await fetch(uploadUrl, {
+                method: "POST",
+                body: formData
+            });
+
+            const uploadJson = await uploadRes.json();
             
-            // 3. Complete upload
-            const completeResponse = await api.post(`/attachments/${attachmentId}/complete`);
+            if (!uploadRes.ok) {
+                return { success: false, message: 'Cloudinary upload failed: ' + (uploadJson.error?.message || 'Unknown error') };
+            }
+            
+            // 3. Complete upload on backend
+            const completeResponse = await api.post(`/attachments/${attachmentId}/complete`, {
+                cloudinaryUrl: uploadJson.secure_url
+            });
             
             if (!completeResponse.data.success) {
                 return { success: false, message: 'Failed to complete upload' };
