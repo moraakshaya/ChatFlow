@@ -35,7 +35,6 @@ const messageReactionSchema = new mongoose.Schema(
         reaction: {
             type: String,
             required: true,
-            enum: ["❤️", "👍", "😂", "🔥", "🎉", "😢", "😡", "👏"],
         },
     },
     {
