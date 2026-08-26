@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useWorkspace } from '../context/WorkspaceContext';
 import useNotifications from '../hooks/useNotifications';
-import { ChevronDown, ChevronRight, Bell, Settings, LogOut, Plus, FolderPlus, UserPlus } from 'lucide-react';
-
+import { useTheme } from '../context/ThemeContext';
+import { ChevronDown, ChevronRight, Bell, Settings, LogOut, Plus, FolderPlus, UserPlus, Sun, Moon } from 'lucide-react';
 import NotificationsPanel from './NotificationsPanel';
 import SettingsModal from './SettingsModal';
 import CreateWorkspaceModal from './CreateWorkspaceModal';
@@ -15,6 +15,7 @@ const MobileHeader = ({ isSidebarOpen, onToggleSidebar }) => {
     const { user, logout } = useAuth();
     const isAdminOrOwner = user?.role === 'admin' || user?.role === 'owner';
     const { workspaces, activeWorkspace, switchWorkspace, activeProject, projects, switchProject } = useWorkspace();
+    const { isDarkMode, toggleTheme } = useTheme();
     
     const { 
         notifications, 
@@ -58,6 +59,14 @@ const MobileHeader = ({ isSidebarOpen, onToggleSidebar }) => {
 
                 {/* Right Side: Profile Actions */}
                 <div className="flex items-center gap-2 flex-shrink-0">
+                    <button 
+                        onClick={toggleTheme}
+                        className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-colors"
+                        title="Toggle Theme"
+                    >
+                        {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+                    </button>
+
                     <button 
                         onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
                         className={`p-1.5 rounded-md transition-colors relative ${
