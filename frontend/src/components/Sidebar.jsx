@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { useSocket } from '../context/SocketContext';
+import { useTheme } from '../context/ThemeContext';
 import useConversations from '../hooks/useConversations';
 import useMembership from '../hooks/useMembership';
 import usePresence from '../hooks/usePresence';
@@ -31,11 +32,14 @@ import {
     Pin,
     BellOff,
     FolderPlus,
-    Briefcase
+    Briefcase,
+    Sun,
+    Moon
 } from 'lucide-react';
 
 const Sidebar = () => {
     const { user, logout } = useAuth();
+    const { isDarkMode, toggleTheme } = useTheme();
     const isAdminOrOwner = user?.role === 'admin' || user?.role === 'owner';
     const { workspaces, activeWorkspace, switchWorkspace, activeProject, projects, switchProject } = useWorkspace();
     const { socket } = useSocket();
@@ -421,6 +425,15 @@ const Sidebar = () => {
                     </div>
                     
                     <div className="flex items-center gap-1 flex-shrink-0">
+                        {/* Theme Toggle */}
+                        <button 
+                            onClick={toggleTheme}
+                            className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-colors" 
+                            title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                        >
+                            {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
+                        </button>
+                        
                         {/* Notifications Bell */}
                         <div className="relative">
                             <button 

@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WorkspaceProvider } from './context/WorkspaceContext';
 import { SocketProvider } from './context/SocketContext';
+import { ThemeProvider } from './context/ThemeContext';
 
 // Pages & Components
 import ProtectedRoute from './components/ProtectedRoute';
@@ -13,25 +14,35 @@ import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import DashboardLayout from './layouts/DashboardLayout';
 import ChatWindow from './components/ChatWindow';
+import Landing from './pages/Landing';
 
 // A simple component to handle auth redirects for public routes (e.g. login/register)
 const PublicRoute = ({ children }) => {
   const { isAuthenticated, isInitialized } = useAuth();
   
   if (!isInitialized) return null; // Wait for initial token check
-  if (isAuthenticated) return <Navigate to="/" replace />;
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
   
   return children;
 };
 
 function App() {
   return (
-    <AuthProvider>
-      <WorkspaceProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <WorkspaceProvider>
         <SocketProvider>
           <BrowserRouter>
             <Routes>
               {/* Public Routes */}
+              <Route 
+                path="/" 
+                element={
+                  <PublicRoute>
+                    <Landing />
+                  </PublicRoute>
+                } 
+              />
               <Route 
                 path="/login" 
                 element={
@@ -68,7 +79,7 @@ function App() {
               {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>
                 <Route element={<DashboardLayout />}>
-                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/channel/:id" element={<ChatWindow />} />
                   {/* Future routes will go here (e.g., /settings, /project/:id) */}
                 </Route>
@@ -81,6 +92,7 @@ function App() {
         </SocketProvider>
       </WorkspaceProvider>
     </AuthProvider>
+    </ThemeProvider>
   );
 }
 

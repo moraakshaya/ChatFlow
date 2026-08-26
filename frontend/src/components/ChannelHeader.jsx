@@ -9,7 +9,7 @@ const ChannelHeader = ({ channel, onManageMembers, onOpenSettings, typingText })
     const initial = dmName ? dmName.charAt(0).toUpperCase() : '?';
 
     return (
-        <div className="min-h-14 border-b border-gray-200 flex items-center justify-between px-6 py-2 bg-white shrink-0 shadow-sm z-10">
+        <div className="min-h-14 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-6 py-2 bg-white dark:bg-[#1e1f22] shrink-0 shadow-sm z-10">
             <div className="flex items-center gap-2">
                 {isPrivate ? (
                     <div className="w-6 h-6 rounded bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-xs font-semibold text-white mr-1 shrink-0">
@@ -21,7 +21,7 @@ const ChannelHeader = ({ channel, onManageMembers, onOpenSettings, typingText })
 
                 {/* Name + typing subtitle (WhatsApp-style) */}
                 <div className="flex flex-col leading-tight">
-                    <h2 className="text-base font-bold text-gray-900 leading-snug">
+                    <h2 className="text-base font-bold text-gray-900 dark:text-gray-100 leading-snug">
                         {isPrivate ? dmName : channel.name}
                     </h2>
 
@@ -34,9 +34,9 @@ const ChannelHeader = ({ channel, onManageMembers, onOpenSettings, typingText })
                             <span className="italic">{typingText}</span>
                         </span>
                     ) : channel.topic && !isPrivate ? (
-                        <p className="text-xs text-indigo-400 truncate max-w-sm font-medium">{channel.topic}</p>
+                        <p className="text-xs text-indigo-400 dark:text-indigo-300 truncate max-w-sm font-medium">{channel.topic}</p>
                     ) : channel.description && !isPrivate ? (
-                        <p className="text-xs text-gray-400 truncate max-w-sm">{channel.description}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-sm">{channel.description}</p>
                     ) : null}
                 </div>
             </div>
@@ -46,14 +46,14 @@ const ChannelHeader = ({ channel, onManageMembers, onOpenSettings, typingText })
                     <div className="flex items-center gap-4">
                         <button 
                             onClick={onManageMembers}
-                            className="text-gray-400 hover:text-blue-600 transition-colors"
+                            className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                             title="Manage Members"
                         >
                             <Users size={18} />
                         </button>
                         <button
                             onClick={onOpenSettings}
-                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
                             title="Channel Settings"
                         >
                             <Settings size={18} />

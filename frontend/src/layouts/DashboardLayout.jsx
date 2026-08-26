@@ -27,7 +27,7 @@ const DashboardLayout = () => {
     }, [location]);
 
     return (
-        <div className="flex flex-col h-screen overflow-hidden bg-white">
+        <div className="flex flex-col h-screen overflow-hidden bg-white dark:bg-[#1e1f22] transition-colors">
             {/* Mobile Header (Hidden on Desktop) */}
             <MobileHeader 
                 isSidebarOpen={isSidebarOpen}

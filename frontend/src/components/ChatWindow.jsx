@@ -273,7 +273,7 @@ const ChatWindow = () => {
 
     if (!activeChannel) {
         return (
-            <div className="flex-1 flex flex-col bg-white overflow-hidden items-center justify-center">
+            <div className="flex-1 flex flex-col bg-white dark:bg-[#1e1f22] overflow-hidden items-center justify-center transition-colors">
                 <Loader2 className="animate-spin text-gray-400 mb-4" size={32} />
                 <p className="text-gray-500">Loading channel...</p>
             </div>
@@ -283,7 +283,7 @@ const ChatWindow = () => {
     const isDM = activeChannel.type === 'private';
 
     return (
-        <div className="flex-1 flex flex-col bg-white overflow-hidden relative">
+        <div className="flex-1 flex flex-col bg-white dark:bg-[#1e1f22] overflow-hidden relative transition-colors">
             <ChannelHeader
                 channel={activeChannel}
                 onManageMembers={() => setIsManageMembersOpen(true)}
@@ -308,15 +308,15 @@ const ChatWindow = () => {
                     </div>
                 ) : messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center max-w-md mx-auto">
-                        <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-4">
+                        <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mb-4">
                             <span className="text-3xl">👋</span>
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                             {isDM
                                 ? `Say hello to ${activeChannel.targetUser?.fullName || 'your teammate'}!`
                                 : `Welcome to #${activeChannel.name}!`}
                         </h3>
-                        <p className="text-gray-500">
+                        <p className="text-gray-500 dark:text-gray-400">
                             {isDM
                                 ? `This is the very beginning of your direct message history with ${activeChannel.targetUser?.fullName || 'them'}.`
                                 : `This is the start of the #${activeChannel.name} channel. Send a message to get the conversation started.`}
@@ -350,7 +350,7 @@ const ChatWindow = () => {
                                     {/* Sender name (only show if not grouped, and not own message in DM) */}
                                     {!isGrouped && (
                                         <div className={`flex items-baseline gap-2 mb-1 ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}>
-                                            <span className="text-sm font-semibold text-gray-900">
+                                            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                                                 {isOwnMessage ? 'You' : senderName}
                                             </span>
                                         </div>
@@ -391,11 +391,11 @@ const ChatWindow = () => {
                                         <div className={`px-4 pt-2 pb-1.5 rounded-2xl shadow-sm relative group/bubble min-w-0 max-w-full ${
                                             isOwnMessage
                                                 ? 'bg-blue-600 text-white rounded-tr-none'
-                                                : 'bg-white border border-gray-100 text-gray-800 rounded-tl-none'
+                                                : 'bg-white dark:bg-[#2b2d31] border border-gray-100 dark:border-gray-800 text-gray-800 dark:text-gray-200 rounded-tl-none'
                                         }`}>
                                             <button 
                                                 onClick={() => setActiveDropdownId(activeDropdownId === msg._id ? null : msg._id)}
-                                                className={`absolute top-1 right-1 p-0.5 rounded-full ${activeDropdownId === msg._id ? 'opacity-100' : 'opacity-0 group-hover/bubble:opacity-100'} transition-all z-20 ${isOwnMessage ? 'bg-blue-600 text-blue-100 hover:text-white hover:bg-blue-700' : 'bg-white text-gray-400 hover:text-gray-800 hover:bg-gray-100 shadow-[0_0_8px_4px_rgba(255,255,255,0.9)]'}`}
+                                                className={`absolute top-1 right-1 p-0.5 rounded-full ${activeDropdownId === msg._id ? 'opacity-100' : 'opacity-0 group-hover/bubble:opacity-100'} transition-all z-20 ${isOwnMessage ? 'bg-blue-600 text-blue-100 hover:text-white hover:bg-blue-700' : 'bg-white dark:bg-[#2b2d31] text-gray-400 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-[0_0_8px_4px_rgba(255,255,255,0.9)] dark:shadow-[0_0_8px_4px_rgba(43,45,49,0.9)]'}`}
                                             >
                                                 <ChevronDown size={20} />
                                             </button>
@@ -404,28 +404,28 @@ const ChatWindow = () => {
                                             {activeDropdownId === msg._id && (
                                                 <div 
                                                     ref={dropdownRef}
-                                                    className={`absolute top-7 right-2 w-48 bg-white border border-gray-200 rounded-md shadow-xl py-1 z-50 text-gray-800`}
+                                                    className={`absolute top-7 right-2 w-48 bg-white dark:bg-[#2b2d31] border border-gray-200 dark:border-gray-700 rounded-md shadow-xl py-1 z-50 text-gray-800 dark:text-gray-200`}
                                                 >
-                                                    <button onClick={() => alert('Reply coming soon!')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2">
+                                                    <button onClick={() => alert('Reply coming soon!')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
                                                         <CornerUpLeft size={14} /> Reply
                                                     </button>
-                                                    <button onClick={() => { setActiveEmojiPickerId(msg._id); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2">
+                                                    <button onClick={() => { setActiveEmojiPickerId(msg._id); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
                                                         <Smile size={14} /> React
                                                     </button>
-                                                    <button onClick={() => { copyToClipboard(msg.content || ''); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2">
+                                                    <button onClick={() => { copyToClipboard(msg.content || ''); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
                                                         <Copy size={14} /> Copy text
                                                     </button>
                                                     
                                                     {isOwnMessage && (
-                                                        <button onClick={() => alert('Edit coming soon!')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2">
+                                                        <button onClick={() => alert('Edit coming soon!')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
                                                             <Edit2 size={14} /> Edit
                                                         </button>
                                                     )}
                                                     
-                                                    <button onClick={() => alert('Forward coming soon!')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2">
+                                                    <button onClick={() => alert('Forward coming soon!')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
                                                         <CornerUpRight size={14} /> Forward
                                                     </button>
-                                                    <button onClick={() => alert('Pin coming soon!')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2">
+                                                    <button onClick={() => alert('Pin coming soon!')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
                                                         <Pin size={14} /> Pin
                                                     </button>
 
@@ -437,20 +437,20 @@ const ChatWindow = () => {
                                                                 window.open(msg.attachments[0].url, '_blank');
                                                             }
                                                             setActiveDropdownId(null); 
-                                                        }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2">
+                                                        }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
                                                             <Download size={14} /> Download
                                                         </button>
                                                     )}
 
                                                     {!isOwnMessage && (
-                                                        <button onClick={() => alert('Message User coming soon!')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2">
+                                                        <button onClick={() => alert('Message User coming soon!')} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
                                                             <MessageSquare size={14} /> Message User
                                                         </button>
                                                     )}
 
                                                     {isOwnMessage && !msg.isDeleted && (
                                                         <>
-                                                            <div className="border-t border-gray-100 my-1"></div>
+                                                            <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
                                                             <button 
                                                                 onClick={() => {
                                                                     if (window.confirm("Are you sure you want to delete this message?")) {
@@ -458,7 +458,7 @@ const ChatWindow = () => {
                                                                     }
                                                                     setActiveDropdownId(null);
                                                                 }} 
-                                                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                                                className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
                                                             >
                                                                 <Trash2 size={14} /> Delete
                                                             </button>
@@ -478,7 +478,7 @@ const ChatWindow = () => {
                                                             className={`flex items-center gap-3 p-3 mt-1 rounded-xl border transition-colors ${
                                                                 isOwnMessage 
                                                                     ? 'bg-blue-600 border-blue-500 hover:bg-blue-700' 
-                                                                    : 'bg-gray-50 border-gray-100 hover:bg-gray-100'
+                                                                    : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
                                                             } ${att.mimeType?.startsWith('image/') ? 'cursor-pointer' : ''}`}
                                                             onClick={() => {
                                                                 if (att.mimeType?.startsWith('image/')) {
@@ -486,13 +486,13 @@ const ChatWindow = () => {
                                                                 }
                                                             }}
                                                         >
-                                                            <div className={`p-2 rounded-lg ${isOwnMessage ? 'bg-blue-500 text-white' : 'bg-white text-blue-600 shadow-sm'}`}>
+                                                            <div className={`p-2 rounded-lg ${isOwnMessage ? 'bg-blue-500 text-white' : 'bg-white dark:bg-[#2b2d31] text-blue-600 dark:text-blue-400 shadow-sm'}`}>
                                                                 {att.mimeType?.startsWith('image/') ? <ImageIcon size={24} /> : 
                                                                  att.mimeType?.includes('pdf') ? <FileText size={24} /> : 
                                                                  <File size={24} />}
                                                             </div>
                                                             <div className="flex-1 min-w-0">
-                                                                <p className={`text-sm font-medium truncate ${isOwnMessage ? 'text-white' : 'text-gray-900'}`} title={att.filename}>
+                                                                <p className={`text-sm font-medium truncate ${isOwnMessage ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`} title={att.filename}>
                                                                     {att.filename}
                                                                 </p>
                                                                 <p className={`text-xs mt-0.5 truncate ${isOwnMessage ? 'text-blue-200' : 'text-gray-500'}`} title={att.mimeType?.split('/')[1]?.toUpperCase() || 'FILE'}>
@@ -500,7 +500,7 @@ const ChatWindow = () => {
                                                                 </p>
                                                             </div>
                                                             <button 
-                                                                className={`p-2 rounded-full transition-colors shrink-0 ${isOwnMessage ? 'hover:bg-blue-500 text-blue-200 hover:text-white' : 'hover:bg-gray-200 text-gray-400 hover:text-gray-700'}`}
+                                                                className={`p-2 rounded-full transition-colors shrink-0 ${isOwnMessage ? 'hover:bg-blue-500 text-blue-200 hover:text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
                                                                 title="Download"
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
@@ -548,8 +548,8 @@ const ChatWindow = () => {
                                                         onClick={() => toggleReaction(msg._id, emoji)}
                                                         className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border ${
                                                             hasReacted
-                                                                ? 'bg-blue-50 border-blue-200 text-blue-700'
-                                                                : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                                                                ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400'
+                                                                : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                                                         }`}
                                                     >
                                                         <span style={{ fontFamily: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif' }}>{emoji}</span>
@@ -569,7 +569,7 @@ const ChatWindow = () => {
                     <div className="flex gap-3 mt-6 flex-row">
                         <div className="w-8 shrink-0" />
                         <div className="flex flex-col items-start max-w-[70%]">
-                            <div className="px-4 py-2.5 rounded-2xl shadow-sm bg-white border border-gray-100 text-gray-500 rounded-tl-none">
+                            <div className="px-4 py-2.5 rounded-2xl shadow-sm bg-white dark:bg-[#2b2d31] border border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 rounded-tl-none">
                                 <span className="flex items-center gap-1 text-xs font-medium">
                                     <span className="typing-dots text-gray-400">
                                         <span /><span /><span />
@@ -586,16 +586,16 @@ const ChatWindow = () => {
 
             {/* Input Area — hidden when channel is archived */}
             {activeChannel.status === 'archived' ? (
-                <div className="p-4 bg-amber-50 border-t border-amber-200 flex items-center justify-center gap-2 text-amber-700">
+                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border-t border-amber-200 dark:border-amber-800/50 flex items-center justify-center gap-2 text-amber-700 dark:text-amber-500">
                     <Archive size={16} className="shrink-0" />
                     <span className="text-sm font-medium">
                         This channel is archived. Members cannot send new messages.
                     </span>
                 </div>
             ) : (
-                <div className="p-4 bg-white border-t border-gray-200 relative">
+                <div className="p-4 bg-white dark:bg-[#1e1f22] border-t border-gray-200 dark:border-gray-800 relative transition-colors">
                     {isUploading && (
-                        <div className="absolute bottom-full mb-4 left-4 max-w-sm bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 text-gray-700 shadow-xl z-10">
+                        <div className="absolute bottom-full mb-4 left-4 max-w-sm bg-white dark:bg-[#2b2d31] border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex items-center gap-3 text-gray-700 dark:text-gray-200 shadow-xl z-10">
                             <Loader2 size={18} className="animate-spin text-blue-600 shrink-0" />
                             <span className="text-sm font-medium truncate">{uploadProgressText}</span>
                         </div>
@@ -624,7 +624,7 @@ const ChatWindow = () => {
                     )}
                     <form
                         onSubmit={handleSendMessage}
-                        className="flex items-end gap-2 bg-gray-50 border border-gray-300 rounded-lg p-2 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-shadow shadow-sm"
+                        className="flex items-end gap-2 bg-gray-50 dark:bg-[#2b2d31] border border-gray-300 dark:border-gray-700 rounded-lg p-2 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-shadow shadow-sm"
                     >
                         <button
                             type="button"
@@ -667,7 +667,7 @@ const ChatWindow = () => {
                                 }
                             }}
                             placeholder={isDM ? `Message ${activeChannel.targetUser?.fullName || 'them'}` : `Message #${activeChannel.name}`}
-                            className="flex-1 max-h-32 bg-transparent border-none focus:outline-none focus:ring-0 resize-none py-2 px-2 text-gray-800 placeholder-gray-400"
+                            className="flex-1 max-h-32 bg-transparent border-none focus:outline-none focus:ring-0 resize-none py-2 px-2 text-gray-800 dark:text-gray-200 placeholder-gray-400"
                             rows={1}
                             style={{ minHeight: '40px' }}
                         />
@@ -702,7 +702,7 @@ const ChatWindow = () => {
                 onUnarchive={unarchiveConversationLocally}
                 onRemove={(id) => {
                     removeConversationLocally(id);
-                    navigate('/');
+                    navigate('/dashboard');
                 }}
             />
             {/* Image Viewer Modal */}
